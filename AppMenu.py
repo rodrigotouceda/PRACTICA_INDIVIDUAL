@@ -16,13 +16,15 @@ class MenuCLI:
             "exportacion": False
         }
 
+        self._nombre_archivo = None
+
     def mostrar_menu(self):
         print("\n" + "=" * 29)
         print("Menú Principal")
         print("=" * 29)
 
         # Opción 1: Cargar datos
-        archivo_estado = "(archivo: datos.csv)" if self.estado["archivo_cargado"] else "(ningún archivo cargado)"
+        archivo_estado = f"archivo: {self._nombre_archivo}" if self.estado["archivo_cargado"] else "(ningún archivo cargado)"
         check = "[✓]" if self.estado["archivo_cargado"] else "[-]"
         print(f"{check} 1. Cargar datos {archivo_estado}")
 
@@ -112,10 +114,13 @@ class MenuCLI:
                     print("Número de columnas: ", df.shape[1])
                     print("Primeras filas :")
                     print(df.head())
+                    print("Datos cargados correctamente")
+                    self.estado["archivo_cargado"] = True
+                    self._nombre_archivo = ruta.name
                 except: 
                     print("\nError al cargar el archivo. Asegúrese de que el formato sea correcto.")
             else:
-                print(f"\nError: El archivo no es del tipo especificado.")
+                print(f"\nError: La ruta del archivo no es correcta o no es del tipo especificado.")
                 return
 
         elif opcion == "3":
@@ -123,7 +128,7 @@ class MenuCLI:
             ruta = Path(ruta)
             extension = ruta.suffix.lower()
             if extension not in [".db", ".sqlite", ".sqlite3"]:
-                print("\nError: El archivo no es del tipo especificado.")
+                print("\nError: La ruta del archivo no es correcta o no es del tipo especificado.")
                 return
             
             reader = FileReader()
@@ -147,8 +152,14 @@ class MenuCLI:
                 print("Primeras filas :")
                 print(df.head())
                 print("Datos cargados correctamente")
+                self.estado["archivo_cargado"] = True
+                self._nombre_archivo = ruta.name
             except: 
                 print("\nError al cargar el archivo. Asegúrese de que el formato sea correcto.")
+
+        else:
+            print("\nOpción no válida.")
+            return
        
         
 
@@ -158,7 +169,6 @@ class MenuCLI:
             opcion = input()
 
             if opcion == "1":
-                self.estado["archivo_cargado"] = True
                 self.cargar_datos()
             elif opcion == "2":
                 if not self.estado["archivo_cargado"]:
