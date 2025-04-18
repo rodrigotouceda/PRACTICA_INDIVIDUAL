@@ -1,0 +1,3 @@
+"C:\Users\usuario\Documents\INGENIERÍA SOFTWARE 2º\PRACTICA_INDIVIDUAL\Housing\housing.db" db
+"C:\Users\usuario\Documents\INGENIERÍA SOFTWARE 2º\PRACTICA_INDIVIDUAL\Housing\housing.xlsx" Excel
+"C:\Users\usuario\Documents\INGENIERÍA SOFTWARE 2º\PRACTICA_INDIVIDUAL\Housing\housing.csv" Csv

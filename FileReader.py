@@ -59,14 +59,61 @@ class FileReader:
                 df = pd.read_csv(file_name)
             elif extension in {'.xls', '.xlsx'}:
                 df = pd.read_excel(file_name)
-            elif extension in {'.db', '.sqlite'}:
-                conn = sqlite3.connect(file_name)
-                query = "SELECT name FROM sqlite_master WHERE type='table';"
-                table_name = pd.read_sql(query, conn).iloc[0, 0]
-                df = pd.read_sql(f'SELECT * FROM {table_name};', conn)
-                conn.close()
 
             return df
+        except:
+            raise ParseError('ERROR: could not parse file')
+        
+    def get_db_tables(self, file_name: str) -> list[str]:
+        """Get list of tables from a SQLite database file.
+
+        Args:
+            file_name: Path to the SQLite file.
+
+        Returns:
+            List of table names.
+
+        Raises:
+            ParseError: If the database can't be accessed or is invalid.
+        """
+        extension = Path(file_name).suffix
+
+        try:
+            self._check_format(extension)
+
+            if extension not in {'.db', '.sqlite'}:
+                raise FormatError
+
+            conn = sqlite3.connect(file_name)
+            query = "SELECT name FROM sqlite_master WHERE type='table';"
+            result = pd.read_sql(query, conn)
+            conn.close()
+
+            return result['name'].tolist()
+
+        except Exception:
+            raise ParseError('ERROR: could not list tables from database')
+
+
+    def parse_sqlite_table(self, file_name: str, table_name: str) -> DataFrame:
+        """Parse a specific table from a SQLite database file.
+        
+        Args:
+            file_name: Path to the SQLite file.
+            table_name: Name of the table to load.
+            
+        Returns:
+            DataFrame with the table contents.
+        """
+        try:
+            conn = sqlite3.connect(file_name)
+            df = pd.read_sql(f'SELECT * FROM "{table_name}";', conn)
+            conn.close()
+            return df
+        except Exception:
+            raise ParseError('ERROR: could not read the specified table')
+    
+
 
         except FormatError:
             raise ParseError('ERROR: unsupported file format')

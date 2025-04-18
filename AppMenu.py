@@ -85,7 +85,7 @@ class MenuCLI:
         return nombres.get(clave, clave)
 
 
-    def menu_carga_datos(self):
+    def cargar_datos(self):
         print("\n" + "=" * 29)
         print("Cargar datos")
         print("=" * 29)
@@ -104,15 +104,15 @@ class MenuCLI:
             extension = ruta.suffix.lower()
             if (opcion == "1" and extension == ".csv") or (opcion == "2" and extension == ".xlsx"):
             
-                file_reader = FileReader()
+                reader = FileReader()
                 try:
-                    df = file_reader.parse_file(ruta)
+                    df = reader.parse_file(ruta)
                     print("Datos cargados correctamente")
                     print("Número de filas: ", df.shape[0])
                     print("Número de columnas: ", df.shape[1])
                     print("Primeras filas :")
                     print(df.head())
-                except:
+                except: 
                     print("\nError al cargar el archivo. Asegúrese de que el formato sea correcto.")
             else:
                 print(f"\nError: El archivo no es del tipo especificado.")
@@ -122,31 +122,33 @@ class MenuCLI:
             ruta = input(f"Ingrese la ruta {diccionario[opcion]}: ")
             ruta = Path(ruta)
             extension = ruta.suffix.lower()
-
-            if extension == ".sqlite":
-                conn = sqlite3.connect(ruta)
-                cursor = conn.cursor()
-                cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-                tablas = cursor.fetchall()
-
-                if tablas:
-                    print("\nTablas disponibles en la base de datos:")
-                    for i, tabla in enumerate(tablas, start=1):
-                        print(f"{i}. {tabla[0]}")
-                else:
-                    print("\nNo hay tablas disponibles en la base de datos.")
-                conn.close()
-            else:
-                print(f"\nError: El archivo no es del tipo especificado.")
+            if extension not in [".db", ".sqlite", ".sqlite3"]:
+                print("\nError: El archivo no es del tipo especificado.")
                 return
-        else:
-            print("\nError: Opción no válida.")
-            return
+            
+            reader = FileReader()
+            tablas = reader.get_db_tables(ruta)
 
-           
+            print("Tablas disponibles en la base de datos :")
+            for i, tabla in enumerate(tablas, start=1):
+                print(f"[{i}] {tabla}")
 
-           
-
+            tabla_seleccionada = input("Seleccione una tabla:")
+            if tabla_seleccionada not in [str(i) for i in range(1, len(tablas) + 1)]:
+                print("\nError: Tabla no válida.")
+                return
+            
+            
+            try:
+                df = reader.parse_sqlite_table(ruta, tablas[int(tabla_seleccionada) - 1])
+                print("Datos cargados correctamente")
+                print("Número de filas: ", df.shape[0])
+                print("Número de columnas: ", df.shape[1])
+                print("Primeras filas :")
+                print(df.head())
+                print("Datos cargados correctamente")
+            except: 
+                print("\nError al cargar el archivo. Asegúrese de que el formato sea correcto.")
        
         
 
@@ -157,8 +159,7 @@ class MenuCLI:
 
             if opcion == "1":
                 self.estado["archivo_cargado"] = True
-                self.menu_carga_datos()
-                print("\nDatos cargados correctamente.")
+                self.cargar_datos()
             elif opcion == "2":
                 if not self.estado["archivo_cargado"]:
                     print("\nPrimero debe cargar un archivo.")
