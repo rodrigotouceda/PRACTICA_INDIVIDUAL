@@ -1,3 +1,8 @@
+from FileReader import FileReader
+import pandas as pd
+from pathlib import Path
+import sqlite3
+
 class MenuCLI:
     def __init__(self):
         self.estado = {
@@ -79,6 +84,72 @@ class MenuCLI:
         }
         return nombres.get(clave, clave)
 
+
+    def menu_carga_datos(self):
+        print("\n" + "=" * 29)
+        print("Cargar datos")
+        print("=" * 29)
+        
+        opcion = input("Seleccione el tipo de archivo a cargar:\n1 - CSV\n2 - Excel\n3 - SQLite\n> ")
+
+        diccionario = {
+            "1": "del archivo CSV",
+            "2": "sel archivo Excel",
+            "3": "de la base de datos SQLite"
+        }
+ 
+        if opcion == "1"  or opcion == "2":
+            ruta = input(f"Ingrese la ruta {diccionario[opcion]}: ")
+            ruta = Path(ruta)
+            extension = ruta.suffix.lower()
+            if (opcion == "1" and extension == ".csv") or (opcion == "2" and extension == ".xlsx"):
+            
+                file_reader = FileReader()
+                try:
+                    df = file_reader.parse_file(ruta)
+                    print("Datos cargados correctamente")
+                    print("Número de filas: ", df.shape[0])
+                    print("Número de columnas: ", df.shape[1])
+                    print("Primeras filas :")
+                    print(df.head())
+                except:
+                    print("\nError al cargar el archivo. Asegúrese de que el formato sea correcto.")
+            else:
+                print(f"\nError: El archivo no es del tipo especificado.")
+                return
+
+        elif opcion == "3":
+            ruta = input(f"Ingrese la ruta {diccionario[opcion]}: ")
+            ruta = Path(ruta)
+            extension = ruta.suffix.lower()
+
+            if extension == ".sqlite":
+                conn = sqlite3.connect(ruta)
+                cursor = conn.cursor()
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+                tablas = cursor.fetchall()
+
+                if tablas:
+                    print("\nTablas disponibles en la base de datos:")
+                    for i, tabla in enumerate(tablas, start=1):
+                        print(f"{i}. {tabla[0]}")
+                else:
+                    print("\nNo hay tablas disponibles en la base de datos.")
+                conn.close()
+            else:
+                print(f"\nError: El archivo no es del tipo especificado.")
+                return
+        else:
+            print("\nError: Opción no válida.")
+            return
+
+           
+
+           
+
+       
+        
+
     def iniciar(self):
         while True:
             self.mostrar_menu()
@@ -86,6 +157,7 @@ class MenuCLI:
 
             if opcion == "1":
                 self.estado["archivo_cargado"] = True
+                self.menu_carga_datos()
                 print("\nDatos cargados correctamente.")
             elif opcion == "2":
                 if not self.estado["archivo_cargado"]:
