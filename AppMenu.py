@@ -17,42 +17,11 @@ class MenuCLI:
         }
 
         self._nombre_archivo = None
+        self._df = None
+        self._columns = None
 
-    def mostrar_menu(self):
-        print("\n" + "=" * 29)
-        print("Menú Principal")
-        print("=" * 29)
 
-        # Opción 1: Cargar datos
-        archivo_estado = f"archivo: {self._nombre_archivo}" if self.estado["archivo_cargado"] else "(ningún archivo cargado)"
-        check = "[✓]" if self.estado["archivo_cargado"] else "[-]"
-        print(f"{check} 1. Cargar datos {archivo_estado}")
-
-        # Opción 2: Preprocesado
-        if not self.estado["archivo_cargado"]:
-            print("[✗] 2. Preprocesado de datos (requiere carga de datos)")
-        else:
-            print("[-] 2. Preprocesado de datos")
-            self._mostrar_subetapas()
-
-        # Opción 3: Visualización
-        if all([self.estado[k] for k in ["seleccion_columnas", "valores_faltantes", "transformacion", "normalizacion", "outliers"]]):
-            check = "[✓]" if self.estado["visualizacion"] else "[-]"
-            print(f"{check} 3. Visualización de datos")
-        else:
-            print("[✗] 3. Visualización de datos (requiere preprocesado completo)")
-
-        # Opción 4: Exportación
-        if self.estado["visualizacion"]:
-            check = "[✓]" if self.estado["exportacion"] else "[-]"
-            print(f"{check} 4. Exportar datos")
-        else:
-            print("[✗] 4. Exportar datos (requiere visualización de datos)")
-
-        print("[✓] 5. Salir")
-        print("Seleccione una opción: ", end='')
-
-    def _mostrar_subetapas(self):
+    def _mostrar_subetapas(self, indent=""):
         etapas = [
             ("seleccion_columnas", "2.1 Selección de columnas"),
             ("valores_faltantes", "2.2 Manejo de valores faltantes"),
@@ -70,11 +39,13 @@ class MenuCLI:
 
         for (clave, texto), req in zip(etapas, requisitos):
             if req and not self.estado[req]:
-                print(f"[✗] {texto} (requiere {self._nombre_etapa(req)})")
+                print(f"{indent}[✗] {texto} (requiere {self._nombre_etapa(req)})")
             else:
                 status = "[✓]" if self.estado[clave] else "[-]"
                 estado_texto = "(completado)" if self.estado[clave] else "(pendiente)"
-                print(f"{status} {texto} {estado_texto}")
+                print(f"{indent}{status} {texto} {estado_texto}")
+
+    
 
     def _nombre_etapa(self, clave):
         nombres = {
@@ -97,7 +68,7 @@ class MenuCLI:
         diccionario = {
             "1": "del archivo CSV",
             "2": "sel archivo Excel",
-            "3": "de la base de datos SQLite"
+            "3": "de la base de datos"
         }
  
         if opcion == "1"  or opcion == "2":
@@ -109,6 +80,7 @@ class MenuCLI:
                 reader = FileReader()
                 try:
                     df = reader.parse_file(ruta)
+                    self._df = df
                     print("Datos cargados correctamente")
                     print("Número de filas: ", df.shape[0])
                     print("Número de columnas: ", df.shape[1])
@@ -146,6 +118,7 @@ class MenuCLI:
             
             try:
                 df = reader.parse_sqlite_table(ruta, tablas[int(tabla_seleccionada) - 1])
+                self._df = df
                 print("Datos cargados correctamente")
                 print("Número de filas: ", df.shape[0])
                 print("Número de columnas: ", df.shape[1])
@@ -161,11 +134,23 @@ class MenuCLI:
             print("\nOpción no válida.")
             return
        
+    def _seleccion_columnas(self):
+        print("\n" + "=" * 29)
+        print("Selección de Columnas")
+        print("=" * 29)
+        print("\n Columnas disponibles en los datos: ")
+        self._columns = self._df.columns.tolist()
+        for i in enumerate(self._columns, start=1):
+            print(f"[{i}] {i}")
+        self.estado["seleccion_columnas"] = True
+        
         
 
+
     def iniciar(self):
+        expandir = False
         while True:
-            self.mostrar_menu()
+            self.mostrar_menu(expandir)  # por defecto sin subetapas
             opcion = input()
 
             if opcion == "1":
@@ -174,7 +159,12 @@ class MenuCLI:
                 if not self.estado["archivo_cargado"]:
                     print("\nPrimero debe cargar un archivo.")
                 else:
-                    self._navegar_preprocesado()
+                    expandir = True  # 👈 mostrá subetapas como parte del menú
+
+            elif opcion == "2.1":
+                self._seleccion_columnas()
+
+                    
             elif opcion == "3":
                 if all([self.estado[k] for k in ["seleccion_columnas", "valores_faltantes", "transformacion", "normalizacion", "outliers"]]):
                     self.estado["visualizacion"] = True
@@ -196,38 +186,79 @@ class MenuCLI:
             else:
                 print("\nOpción no válida.")
 
-    def _navegar_preprocesado(self):
-        print("\n-- Preprocesado --")
-        print("Seleccione subetapa:")
-        print("  1. Selección de columnas")
-        print("  2. Manejo de valores faltantes")
-        print("  3. Transformación categórica")
-        print("  4. Normalización y escalado")
-        print("  5. Manejo de outliers")
-        subop = input("Opción: ")
-        mapeo = {
-            "1": "seleccion_columnas",
-            "2": "valores_faltantes",
-            "3": "transformacion",
-            "4": "normalizacion",
-            "5": "outliers"
-        }
-        etapa = mapeo.get(subop)
-        if etapa:
-            requisitos = {
-                "valores_faltantes": "seleccion_columnas",
-                "transformacion": "valores_faltantes",
-                "normalizacion": "transformacion",
-                "outliers": "normalizacion"
-            }
-            req = requisitos.get(etapa)
-            if req and not self.estado[req]:
-                print(f"\nPrimero debe completar: {self._nombre_etapa(req)}.")
-            else:
-                self.estado[etapa] = True
-                print(f"\nEtapa '{self._nombre_etapa(etapa)}' completada.")
+
+    def mostrar_menu(self, expandir_subetapas=False):
+        print("\n" + "=" * 29)
+        print("Menú Principal")
+        print("=" * 29)
+
+        # Opción 1: Cargar datos
+        archivo_estado = f"(archivo: {self._nombre_archivo})" if self.estado["archivo_cargado"] else "(ningún archivo cargado)"
+        check = "[✓]" if self.estado["archivo_cargado"] else "[-]"
+        print(f"{check} 1. Cargar datos {archivo_estado}")
+
+        # Opción 2: Preprocesado
+        if not self.estado["archivo_cargado"]:
+            print("[✗] 2. Preprocesado de datos (requiere carga de datos)")
         else:
-            print("\nSubopción no válida.")
+            print("[-] 2. Preprocesado de datos")
+            if expandir_subetapas:
+                self._mostrar_subetapas(indent="\t")  # Le pasamos una tabulación
+
+
+        # Opción 3: Visualización
+        if all([self.estado[k] for k in ["seleccion_columnas", "valores_faltantes", "transformacion", "normalizacion", "outliers"]]):
+            check = "[✓]" if self.estado["visualizacion"] else "[-]"
+            print(f"{check} 3. Visualización de datos")
+        else:
+            print("[✗] 3. Visualización de datos (requiere preprocesado completo)")
+
+        # Opción 4: Exportación
+        if self.estado["visualizacion"]:
+            check = "[✓]" if self.estado["exportacion"] else "[-]"
+            print(f"{check} 4. Exportar datos")
+        else:
+            print("[✗] 4. Exportar datos (requiere visualización de datos)")
+
+        print("[✓] 5. Salir")
+        print("Seleccione una opción: ", end='')
+
+
+
+    def _navegar_preprocesado(self):
+           
+            opcion = input("Seleccione una opción: ")
+
+            if opcion == "1":
+                self._seleccion_columnas()
+            elif opcion == "2":
+                if not self.estado["seleccion_columnas"]:
+                    print("\nPrimero debe seleccionar las columnas.")
+                else:
+                    self.estado["valores_faltantes"] = True
+                    print("\nManejo de valores faltantes completado.")
+            elif opcion == "3":
+                if not self.estado["valores_faltantes"]:
+                    print("\nPrimero debe manejar los valores faltantes.")
+                else:
+                    self.estado["transformacion"] = True
+                    print("\nTransformación de datos categóricos completada.")
+            elif opcion == "4":
+                if not self.estado["transformacion"]:
+                    print("\nPrimero debe transformar los datos categóricos.")
+                else:
+                    self.estado["normalizacion"] = True
+                    print("\nNormalización y escalado completados.")
+            elif opcion == "5":
+                if not self.estado["normalizacion"]:
+                    print("\nPrimero debe normalizar y escalar los datos.")
+                else:
+                    self.estado["outliers"] = True
+                    print("\nDetección y manejo de valores atípicos completados.")
+            else:
+                print("\nOpción no válida.")
+
+
 
     def _confirmar_salida(self):
         print("\n" + "=" * 29)
