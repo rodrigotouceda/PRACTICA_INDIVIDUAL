@@ -19,6 +19,8 @@ class MenuCLI:
         self._nombre_archivo = None
         self._df = None
         self._columns = None
+        self._features = None
+        self._target = None
 
 
     def _mostrar_subetapas(self, indent=""):
@@ -133,18 +135,66 @@ class MenuCLI:
         else:
             print("\nOpción no válida.")
             return
+        
+
+
        
     def _seleccion_columnas(self):
-        print("\n" + "=" * 29)
-        print("Selección de Columnas")
-        print("=" * 29)
-        print("\n Columnas disponibles en los datos: ")
-        self._columns = self._df.columns.tolist()
-        for i in enumerate(self._columns, start=1):
-            print(f"[{i}] {i}")
-        self.estado["seleccion_columnas"] = True
+        while True:
+            print("\n" + "=" * 29)
+            print("Selección de Columnas")
+            print("=" * 29)
+            self._columns = self._df.columns.tolist()
+    
+            print("\n Columnas disponibles en los datos: ")
+            for i, col in enumerate(self._columns, start=0):
+                print("\t [{}] {}".format(i, col))
+    
+            try:
+                features_input = input("\nIngrese los números de las columnas de entrada (features), separados por comas: ")
+                target_input = input("\nIngrese el número de la columna de salida (target): ")
+    
+                # Validaciones básicas
+                features_indices = [int(i.strip()) for i in features_input.split(",") if i.strip() != ""]
+                target_index = int(target_input.strip())
+    
+                if not features_indices:
+                    print("\n⚠️ Error: Debe seleccionar al menos una columna como feature.")
+                    continue
+                
+                if target_index in features_indices:
+                    print("\n⚠️ Error: La columna target no puede ser una de las features.")
+                    continue
+                
+                if any(i < 0 or i >= len(self._columns) for i in features_indices + [target_index]):
+                    print("\n⚠️ Error: Has ingresado un número de columna que no existe.")
+                    continue
+                
+                # Convertir a nombres de columnas
+                features = [self._columns[i] for i in features_indices]
+                target = self._columns[target_index]
+    
+                print("\nSelección guardada:")
+                print(f"Features = {features}")
+                print(f"Target = {target}")
+    
+                # Confirmar selección
+                confirm = input("\n¿Desea confirmar esta selección? (s/n): ").lower()
+                if confirm == 's':
+                    self.estado["seleccion_columnas"] = True
+                    self.estado["preprocesado_habilitado"] = True  # Habilitar el preprocesado
+                    self._features = features
+                    self._target = target
+                    break  # Salir del while
+                else:
+                    print("\n🔄 Volviendo a seleccionar columnas...")
+    
+            except ValueError:
+                print("\n⚠️ Error: Entrada inválida.")
+
         
         
+
 
 
     def iniciar(self):
