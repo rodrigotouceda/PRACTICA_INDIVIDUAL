@@ -1,6 +1,7 @@
 from FileReader import FileReader
 import pandas as pd
 from pathlib import Path
+from DataManager import DataManager
 import sqlite3
 
 class MenuCLI:
@@ -16,11 +17,9 @@ class MenuCLI:
             "exportacion": False
         }
 
-        self._nombre_archivo = None
-        self._df = None
-        self._columns = None
-        self._features = None
-        self._target = None
+        self.nombre_archivo = None
+        self.df = None
+        self.dataManager = None
 
 
     def _mostrar_subetapas(self, indent=""):
@@ -83,6 +82,7 @@ class MenuCLI:
                 try:
                     df = reader.parse_file(ruta)
                     self._df = df
+                    self.dataManager = DataManager(df)
                     print("Datos cargados correctamente")
                     print("Número de filas: ", df.shape[0])
                     print("Número de columnas: ", df.shape[1])
@@ -121,6 +121,7 @@ class MenuCLI:
             try:
                 df = reader.parse_sqlite_table(ruta, tablas[int(tabla_seleccionada) - 1])
                 self._df = df
+                self.dataManager = DataManager(df)
                 print("Datos cargados correctamente")
                 print("Número de filas: ", df.shape[0])
                 print("Número de columnas: ", df.shape[1])
@@ -139,52 +140,33 @@ class MenuCLI:
 
 
        
-    def _seleccion_columnas(self):
+    def seleccion_columnas(self):
         while True:
             print("\n" + "=" * 29)
             print("Selección de Columnas")
             print("=" * 29)
-            self._columns = self._df.columns.tolist()
     
             print("\n Columnas disponibles en los datos: ")
-            for i, col in enumerate(self._columns, start=0):
-                print("\t [{}] {}".format(i, col))
-    
+            self.dataManager.display_columns()
+
             try:
-                features_input = input("\nIngrese los números de las columnas de entrada (features), separados por comas: ")
-                target_input = input("\nIngrese el número de la columna de salida (target): ")
-    
-                # Validaciones básicas
-                features_indices = [int(i.strip()) for i in features_input.split(",") if i.strip() != ""]
-                target_index = int(target_input.strip())
-    
-                if not features_indices:
-                    print("\n⚠️ Error: Debe seleccionar al menos una columna como feature.")
+                features = input("\nIngrese los números de las columnas de entrada (features), separados por comas: ")
+                target = input("\nIngrese el número de la columna de salida (target): ")
+
+                X, y = self.dataManager.select_columns(features, target)
+
+                if X is None or y is None:
                     continue
                 
-                if target_index in features_indices:
-                    print("\n⚠️ Error: La columna target no puede ser una de las features.")
-                    continue
-                
-                if any(i < 0 or i >= len(self._columns) for i in features_indices + [target_index]):
-                    print("\n⚠️ Error: Has ingresado un número de columna que no existe.")
-                    continue
-                
-                # Convertir a nombres de columnas
-                features = [self._columns[i] for i in features_indices]
-                target = self._columns[target_index]
-    
                 print("\nSelección guardada:")
-                print(f"Features = {features}")
-                print(f"Target = {target}")
+                print(f"Features = {X}")
+                print(f"Target = {y}")
     
                 # Confirmar selección
                 confirm = input("\n¿Desea confirmar esta selección? (s/n): ").lower()
                 if confirm == 's':
                     self.estado["seleccion_columnas"] = True
                     self.estado["preprocesado_habilitado"] = True  # Habilitar el preprocesado
-                    self._features = features
-                    self._target = target
                     break  # Salir del while
                 else:
                     print("\n🔄 Volviendo a seleccionar columnas...")
@@ -193,7 +175,23 @@ class MenuCLI:
                 print("\n⚠️ Error: Entrada inválida.")
 
         
-        
+    
+    def valores_faltantes(self):
+        print("\n" + "=" * 29)
+        print("Manejo de Valores Faltantes")
+        print("=" * 29)
+        print("\n Se han detectado valores faltantes en las siguientes columnas:")
+        for x in self._features:
+            if self._df[x].isnull().any():
+                print(f"\t - {x}: {self._df[x].isnull().sum()} valores faltantes")
+
+        print("\n Seleccione una estrategia para manejar los valores faltantes:")
+        print("\t[1] Eliminar filas con valores faltantes")
+        print("\t[2] Rellenar con la media de la columna")
+        print("\t[3] Rellenar con la mediana de la columna")
+        print("\t[4] Rellenar con la moda de la columna")
+        print("\t[5] Rellenar con un valor constante")
+        print("\t[6] Regresar al menú principal")
 
 
 
@@ -212,7 +210,7 @@ class MenuCLI:
                     expandir = True  # 👈 mostrá subetapas como parte del menú
 
             elif opcion == "2.1":
-                self._seleccion_columnas()
+                self.seleccion_columnas()
 
                     
             elif opcion == "3":
@@ -280,7 +278,7 @@ class MenuCLI:
             opcion = input("Seleccione una opción: ")
 
             if opcion == "1":
-                self._seleccion_columnas()
+                self.seleccion_columnas()
             elif opcion == "2":
                 if not self.estado["seleccion_columnas"]:
                     print("\nPrimero debe seleccionar las columnas.")
