@@ -45,7 +45,57 @@ class DataManager:
 
         return X, y
     
-    
+    def manage_missing_values(self, columns, method: int):
+        """
+        Manage missing values in specific columns of the DataFrame.
+
+        Args:
+            columns (list): Column names to apply the method on.
+            method (int): 
+                1 - Drop rows with NaN
+                2 - Fill with mean
+                3 - Fill with median
+                4 - Fill with mode
+                5 - Fill with a specific value
+                6 - Restart menu
+
+        Returns:
+            None or DataFrame: Returns the updated DataFrame or None if cancelled.
+        """
+        if method == 1:
+            self.data = self.data.dropna(subset=columns)
+
+        elif method == 2:
+            for col in columns:
+                if pd.api.types.is_numeric_dtype(self.data[col]):
+                    self.data[col] = self.data[col].fillna(self.data[col].mean())
+
+        elif method == 3:
+            for col in columns:
+                if pd.api.types.is_numeric_dtype(self.data[col]):
+                    self.data[col] = self.data[col].fillna(self.data[col].median())
+
+        elif method == 4:
+            for col in columns:
+                self.data[col] = self.data[col].fillna(self.data[col].mode().iloc[0])
+
+        elif method == 5:
+            value = input("Ingrese el valor con el que desea llenar los NaN: ")
+            for col in columns:
+                self.data[col] = self.data[col].fillna(value)
+
+        elif method == 6:
+            print("\n🔁 Reiniciando menú de manejo de valores faltantes...")
+            return None
+
+        else:
+            print("\n⚠️ Error: Opción no válida.")
+            return None
+
+        return self.data
+
+
+        
 
         
 

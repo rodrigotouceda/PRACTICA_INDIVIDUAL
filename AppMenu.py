@@ -81,7 +81,7 @@ class MenuCLI:
                 reader = FileReader()
                 try:
                     df = reader.parse_file(ruta)
-                    self._df = df
+                    self.df = df
                     self.dataManager = DataManager(df)
                     print("Datos cargados correctamente")
                     print("Número de filas: ", df.shape[0])
@@ -120,7 +120,7 @@ class MenuCLI:
             
             try:
                 df = reader.parse_sqlite_table(ruta, tablas[int(tabla_seleccionada) - 1])
-                self._df = df
+                self.df = df
                 self.dataManager = DataManager(df)
                 print("Datos cargados correctamente")
                 print("Número de filas: ", df.shape[0])
@@ -181,9 +181,10 @@ class MenuCLI:
         print("Manejo de Valores Faltantes")
         print("=" * 29)
         print("\n Se han detectado valores faltantes en las siguientes columnas:")
-        for x in self._features:
-            if self._df[x].isnull().any():
-                print(f"\t - {x}: {self._df[x].isnull().sum()} valores faltantes")
+
+        for x in self.dataManager.features:
+            if self.df[x].isnull().any():
+                print(f"\t - {x}: {self.df[x].isnull().sum()} valores faltantes")
 
         print("\n Seleccione una estrategia para manejar los valores faltantes:")
         print("\t[1] Eliminar filas con valores faltantes")
@@ -192,7 +193,13 @@ class MenuCLI:
         print("\t[4] Rellenar con la moda de la columna")
         print("\t[5] Rellenar con un valor constante")
         print("\t[6] Regresar al menú principal")
-
+        opcion = int(input("Seleccione una opción: "))
+        
+        managed_df = self.dataManager.manage_missing_values(self.dataManager.features, opcion)
+        if managed_df is not None:
+            self.df = managed_df
+            self.estado["valores_faltantes"] = True
+            print("\n Manejo de valores faltantes completado.")
 
 
     def iniciar(self):
@@ -210,7 +217,16 @@ class MenuCLI:
                     expandir = True  # 👈 mostrá subetapas como parte del menú
 
             elif opcion == "2.1":
-                self.seleccion_columnas()
+                if not expandir:
+                    print("Opción no disponible. Seleccione '2' para expandir el menú.")
+                else:
+                    self.seleccion_columnas()
+
+            elif opcion == "2.2":
+                if not expandir:
+                    print("Opción no disponible. Seleccione '2' para expandir el menú.")
+                else:
+                    self.valores_faltantes()
 
                     
             elif opcion == "3":
