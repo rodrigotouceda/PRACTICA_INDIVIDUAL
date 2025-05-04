@@ -93,7 +93,31 @@ class DataManager:
             return None
 
         return self.data
+    
 
+    def is_categorical(self, column: str) -> bool:
+        """Check if a column is categorical."""
+        
+        return (pd.api.types.is_categorical_dtype(self.data[column]) 
+                or pd.api.types.is_object_dtype(self.data[column]) 
+                and self.data[column].nunique() < 0.05 * len(self.data[column]) 
+                or pd.api.types.is_numeric_dtype(self.data[column]) 
+                and self.data[column].nunique() < 0.05 * len(self.data[column])
+    )
+
+    def to_one_hot(self, columns: list[str]):
+        """Convert specified columns to one-hot encoding."""
+        df_encoded = pd.get_dummies(self.data, columns = columns)
+        return df_encoded
+    
+    def to_label(self , columns: list[str]):
+        """Convert specified columns to label encoding."""
+        for col in columns:
+            self.data[col] = self.data[col].astype('category').cat.codes
+        return self.data
+
+
+    
 
         
 

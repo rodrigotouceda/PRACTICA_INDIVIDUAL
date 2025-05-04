@@ -180,6 +180,20 @@ class MenuCLI:
         print("\n" + "=" * 29)
         print("Manejo de Valores Faltantes")
         print("=" * 29)
+
+        valores_faltantes = False
+        for i in self.dataManager.features:
+            if self.df[i].isnull().any():
+                valores_faltantes = True
+                break
+
+        if not valores_faltantes:
+            print("\nNo se han detectado valores faltantes en las columnas seleccionadas.")
+            print("\nNo es necesario manejar los valores faltantes.")
+            self.estado["valores_faltantes"] = True
+            return
+            
+
         print("\n Se han detectado valores faltantes en las siguientes columnas:")
 
         for x in self.dataManager.features:
@@ -200,6 +214,47 @@ class MenuCLI:
             self.df = managed_df
             self.estado["valores_faltantes"] = True
             print("\n Manejo de valores faltantes completado.")
+
+
+    def transformacion_datos_categoricos(self):
+        print("\n" + "=" * 29)
+        print("Transformación de Datos Categóricos")
+        print("=" * 29)
+
+        datos_categoricos = False
+        for i in self.dataManager.features:
+            if self.dataManager.is_categorical(i):
+                datos_categoricos = True
+                break
+        if not datos_categoricos:
+            print("\n No se han detectado columnas categóricas en las variables de entrada seleccionadas.")
+            print("\n No es necesario aplicar ninguna transformación.")
+            self.estado["transformacion"] = True
+            return
+        
+        print("Se han detectado columnas categóricas en las variables de entrada seleccionadas: ")
+        for i in self.dataManager.features:
+            if self.dataManager.is_categorical(i):
+                print(f"\t -{i}")
+        print("Seleccione una estrategia de transformación:")
+        print("\t[1] One-Hot Encoding (genera nuevas columnas binarias)")
+        print("\t[2] Label Encoding(convierte categorías a números enteros)")
+        opcion = int(input("Seleccione una opción:"))
+
+        if opcion == 1:
+            df_transformado = self.dataManager.to_one_hot(self.dataManager.features)
+            print("Transformación completada con One-Hot Encoding.")
+        elif opcion == 2:
+            df_transformado = self.dataManager.to_label(self.dataManager.features)
+            print("Transformación completada con Label Encoding.")
+        else:
+            print("\nOpción no válida.")
+            return
+        
+        self.df = df_transformado
+        self.estado["transformacion"] = True
+        
+
 
 
     def iniciar(self):
@@ -225,8 +280,18 @@ class MenuCLI:
             elif opcion == "2.2":
                 if not expandir:
                     print("Opción no disponible. Seleccione '2' para expandir el menú.")
+                elif not self.estado["seleccion_columnas"]:
+                    print("\nPrimero debe seleccionar las columnas.")
                 else:
                     self.valores_faltantes()
+
+            elif opcion == "2.3":
+                if not expandir:
+                    print("Opción no disponible. Seleccione '2' para expandir el menú.")
+                elif not self.estado["valores_faltantes"]:
+                    print("\nPrimero debe manejar los valores faltantes.")
+                else:
+                    self.transformacion_datos_categoricos()
 
                     
             elif opcion == "3":
