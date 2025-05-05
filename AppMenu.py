@@ -225,7 +225,8 @@ class MenuCLI:
         for i in self.dataManager.features:
             if self.dataManager.is_categorical(i):
                 datos_categoricos = True
-                break
+                
+
         if not datos_categoricos:
             print("\n No se han detectado columnas categóricas en las variables de entrada seleccionadas.")
             print("\n No es necesario aplicar ninguna transformación.")
@@ -233,19 +234,19 @@ class MenuCLI:
             return
         
         print("Se han detectado columnas categóricas en las variables de entrada seleccionadas: ")
-        for i in self.dataManager.features:
-            if self.dataManager.is_categorical(i):
-                print(f"\t -{i}")
+        for i in self.dataManager.categoric_columns:
+            print(f"\t - {i}")
+            
         print("Seleccione una estrategia de transformación:")
         print("\t[1] One-Hot Encoding (genera nuevas columnas binarias)")
         print("\t[2] Label Encoding(convierte categorías a números enteros)")
         opcion = int(input("Seleccione una opción:"))
 
         if opcion == 1:
-            df_transformado = self.dataManager.to_one_hot(self.dataManager.features)
+            df_transformado = self.dataManager.to_one_hot(self.dataManager.categoric_columns)
             print("Transformación completada con One-Hot Encoding.")
         elif opcion == 2:
-            df_transformado = self.dataManager.to_label(self.dataManager.features)
+            df_transformado = self.dataManager.to_label(self.dataManager.categoric_columns)
             print("Transformación completada con Label Encoding.")
         else:
             print("\nOpción no válida.")
@@ -253,6 +254,7 @@ class MenuCLI:
         
         self.df = df_transformado
         self.estado["transformacion"] = True
+        print(f"{self.df.head()}")
         
 
 

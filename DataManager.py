@@ -7,6 +7,8 @@ class DataManager:
         self.columns = dataframe.columns.tolist()
         self.features = None
         self.target = None
+        self.categoric_columns = []
+        self.numeric_columns = []
 
     def get_columns(self):
         """Get the list of columns in the DataFrame."""
@@ -98,12 +100,17 @@ class DataManager:
     def is_categorical(self, column: str) -> bool:
         """Check if a column is categorical."""
         
-        return (pd.api.types.is_categorical_dtype(self.data[column]) 
+        if (pd.api.types.is_categorical_dtype(self.data[column]) 
                 or pd.api.types.is_object_dtype(self.data[column]) 
                 and self.data[column].nunique() < 0.05 * len(self.data[column]) 
                 or pd.api.types.is_numeric_dtype(self.data[column]) 
                 and self.data[column].nunique() < 0.05 * len(self.data[column])
-    )
+    ):      
+            self.categoric_columns.append(column)
+            return True
+        
+        else:
+            return False
 
     def to_one_hot(self, columns: list[str]):
         """Convert specified columns to one-hot encoding."""
@@ -115,8 +122,7 @@ class DataManager:
         for col in columns:
             self.data[col] = self.data[col].astype('category').cat.codes
         return self.data
-
-
+    
     
 
         
