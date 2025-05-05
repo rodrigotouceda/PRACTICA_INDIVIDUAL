@@ -1,4 +1,5 @@
 import pandas as pd
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 class DataManager:
     def __init__(self, dataframe: pd.DataFrame):
@@ -8,7 +9,7 @@ class DataManager:
         self.features = None
         self.target = None
         self.categoric_columns = []
-        self.numeric_columns = []
+        self.normalizable_columns = []
 
     def get_columns(self):
         """Get the list of columns in the DataFrame."""
@@ -101,12 +102,20 @@ class DataManager:
         """Check if a column is categorical."""
         
         if (pd.api.types.is_categorical_dtype(self.data[column]) 
-                or pd.api.types.is_object_dtype(self.data[column]) 
-                and self.data[column].nunique() < 0.05 * len(self.data[column]) 
-                or pd.api.types.is_numeric_dtype(self.data[column]) 
-                and self.data[column].nunique() < 0.05 * len(self.data[column])
+                or pd.api.types.is_object_dtype(self.data[column]) and self.data[column].nunique() < 0.05 * len(self.data[column]) 
+                or pd.api.types.is_numeric_dtype(self.data[column]) and self.data[column].nunique() < 0.05 * len(self.data[column])
     ):      
             self.categoric_columns.append(column)
+            return True
+        
+        else:
+            return False
+        
+    def is_normalizable(self, column: str) -> bool:
+        """Check if a column is normalizable."""
+        if (pd.api.types.is_numeric_dtype(self.data[column])) and (self.data[column].nunique() > 0.05 * len(self.data[column])
+                and self.data[column].nunique() < 0.95 * len(self.data[column])):
+            self.normalizable_columns.append(column)
             return True
         
         else:
@@ -123,7 +132,17 @@ class DataManager:
             self.data[col] = self.data[col].astype('category').cat.codes
         return self.data
     
-    
+    def min_max_scaler(self, columns: list[str]):
+        """Apply Min-Max scaling to specified columns."""
+        scaler = MinMaxScaler()
+        self.data[columns] = scaler.fit_transform(self.data[columns])
+        return self.data
+
+    def z_score_scaler(self, columns: list[str]):
+        """Apply Z-Score scaling to specified columns."""
+        scaler = StandardScaler()
+        self.data[columns] = scaler.fit_transform(self.data[columns])
+        return self.data
 
         
 

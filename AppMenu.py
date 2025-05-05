@@ -183,7 +183,7 @@ class MenuCLI:
 
         valores_faltantes = False
         for i in self.dataManager.features:
-            if self.df[i].isnull().any():
+            if self.dataManager.data[i].isnull().any():
                 valores_faltantes = True
                 break
 
@@ -197,8 +197,8 @@ class MenuCLI:
         print("\n Se han detectado valores faltantes en las siguientes columnas:")
 
         for x in self.dataManager.features:
-            if self.df[x].isnull().any():
-                print(f"\t - {x}: {self.df[x].isnull().sum()} valores faltantes")
+            if self.dataManager.data[x].isnull().any():
+                print(f"\t - {x}: {self.dataManager.data[x].isnull().sum()} valores faltantes")
 
         print("\n Seleccione una estrategia para manejar los valores faltantes:")
         print("\t[1] Eliminar filas con valores faltantes")
@@ -212,6 +212,7 @@ class MenuCLI:
         managed_df = self.dataManager.manage_missing_values(self.dataManager.features, opcion)
         if managed_df is not None:
             self.df = managed_df
+            self.dataManager.data = managed_df  
             self.estado["valores_faltantes"] = True
             print("\n Manejo de valores faltantes completado.")
 
@@ -223,7 +224,7 @@ class MenuCLI:
 
         datos_categoricos = False
         for i in self.dataManager.features:
-            if self.dataManager.is_categorical(i):
+            if self.dataManager.is_categorical(i):  
                 datos_categoricos = True
                 
 
@@ -240,6 +241,7 @@ class MenuCLI:
         print("Seleccione una estrategia de transformación:")
         print("\t[1] One-Hot Encoding (genera nuevas columnas binarias)")
         print("\t[2] Label Encoding(convierte categorías a números enteros)")
+        print("\t[3] Regresar al menú principal")
         opcion = int(input("Seleccione una opción:"))
 
         if opcion == 1:
@@ -248,13 +250,58 @@ class MenuCLI:
         elif opcion == 2:
             df_transformado = self.dataManager.to_label(self.dataManager.categoric_columns)
             print("Transformación completada con Label Encoding.")
+        elif opcion == 3:
+            print("\n🔁 Reiniciando menú de manejo de valores faltantes...")
+            return
         else:
             print("\nOpción no válida.")
             return
         
         self.df = df_transformado
         self.estado["transformacion"] = True
-        print(f"{self.df.head()}")
+        
+    def normalizacion(self):
+        print("\n" + "=" * 29)
+        print("Normalización y Escalado")
+        print("=" * 29)
+        datos_normalizables = False
+        for i in self.dataManager.features:
+            if self.dataManager.is_normalizable(i):  
+                datos_normalizables = True
+
+        if not datos_normalizables:
+            print("\n No se han detectado columnas numericas en las variables de entrada seleccionadas.")
+            print("\n No es necesario aplicar ninguna normalización.")
+            self.estado["normalizacion"] = True
+            return
+        
+        print("Se han detectado columnas numéricas en las variables de entrada seleccionadas: ")
+        for i in self.dataManager.normalizable_columns:
+            print(f"\t - {i}")
+
+        print("Seleccione una estrategia de normalización:")
+        print("\t[1] Min-Max Scaling (escala valores entre 0 y 1)")
+        print("\t[2] Z-score Normalization  (media 0, desviación estándar 1)")
+        print("\t[3] Regresar al menú principal")
+
+        opcion = int(input("Seleccione una opción:"))
+
+        if opcion == 1:
+            df_normalizado = self.dataManager.min_max_scaler(self.dataManager.normalizable_columns)
+            print("Normalización Min-Max completada.")
+            print(self.df.head())
+        elif opcion == 2:
+            df_normalizado = self.dataManager.z_score_scaler(self.dataManager.normalizable_columns)
+            print("Normalización Z-score completada.")
+            print(self.df.head())
+        elif opcion == 3:
+            return
+        else:
+            print("\nOpción no válida.")
+            return
+        
+        self.df = df_normalizado
+        self.estado["normalizacion"] = True
         
 
 
@@ -294,6 +341,14 @@ class MenuCLI:
                     print("\nPrimero debe manejar los valores faltantes.")
                 else:
                     self.transformacion_datos_categoricos()
+
+            elif opcion == "2.4":
+                if not expandir:
+                    print("Opción no disponible. Seleccione '2' para expandir el menú.")
+                elif not self.estado["transformacion"]:
+                    print("\nPrimero debe transformar los datos categóricos.")
+                else:
+                    self.normalizacion()
 
                     
             elif opcion == "3":
