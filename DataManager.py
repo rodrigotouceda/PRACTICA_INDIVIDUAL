@@ -10,6 +10,7 @@ class DataManager:
         self.target = None
         self.categoric_columns = []
         self.normalizable_columns = []
+        self.outlier_columns = []
 
     def get_columns(self):
         """Get the list of columns in the DataFrame."""
@@ -120,11 +121,76 @@ class DataManager:
         
         else:
             return False
+        
+    def has_outliers(self, column: str) -> bool:
+        if self.data[column].dtype in ['int64', 'float64']:
+            Q1 = self.data[column].quantile(0.25)
+            Q3 = self.data[column].quantile(0.75)
+            IQR = Q3 - Q1
+
+            lower_bound = Q1 - 1.5 * IQR
+            upper_bound = Q3 + 1.5 * IQR
+
+            outliers = (self.data[column] < lower_bound) | (self.data[column] > upper_bound)
+            self.outlier_columns.append(column)
+            return outliers.any()  # Devuelve True si algún valor es un outlier
+        else:
+            return False
+
+  
+    
+    def remove_outliers(self, column: str):
+        """Elimina las filas que contienen outliers en la columna especificada usando el método IQR."""
+        Q1 = self.data[column].quantile(0.25)
+        Q3 = self.data[column].quantile(0.75)
+        IQR = Q3 - Q1
+
+        lower_bound = Q1 - 1.5 * IQR
+        upper_bound = Q3 + 1.5 * IQR
+
+        # Conserva solo los valores dentro de los límites
+        self.data = self.data[(self.data[column] >= lower_bound) & (self.data[column] <= upper_bound)]
+        return self.data
+    
+    def replace_outliers_with_median(self, column: str):
+        """Reemplaza los outliers en la columna especificada con la mediana de esa columna."""
+        if pd.api.types.is_numeric_dtype(self.data[column]):
+            Q1 = self.data[column].quantile(0.25)
+            Q3 = self.data[column].quantile(0.75)
+            IQR = Q3 - Q1
+    
+            lower_bound = Q1 - 1.5 * IQR
+            upper_bound = Q3 + 1.5 * IQR
+    
+            # Calcula la mediana
+            median_value = self.data[column].median()
+    
+            # Reemplaza los outliers con la mediana
+            mask_outliers = (self.data[column] < lower_bound) | (self.data[column] > upper_bound)
+            self.data.loc[mask_outliers, column] = median_value
+    
+        return self.data
+    
+
 
     def to_one_hot(self, columns: list[str]):
-        """Convert specified columns to one-hot encoding."""
-        df_encoded = pd.get_dummies(self.data, columns = columns)
-        return df_encoded
+        """One-hot encode columns and update only selected features."""
+        original_features = self.features.copy()
+
+        self.data = pd.get_dummies(self.data, columns=columns)
+
+        # Actualizar solo las columnas derivadas de las seleccionadas
+        updated_features = []
+        for col in original_features:
+            if col in columns:
+                # Añadir todas las nuevas columnas one-hot que provienen de esta
+                updated_features.extend([c for c in self.data.columns if c.startswith(col + '_')])
+            elif col in self.data.columns:
+                updated_features.append(col)  # Si sigue existiendo, mantenerla
+
+        self.features = updated_features
+        return self.data
+
     
     def to_label(self , columns: list[str]):
         """Convert specified columns to label encoding."""

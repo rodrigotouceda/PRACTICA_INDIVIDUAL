@@ -259,6 +259,7 @@ class MenuCLI:
         
         self.df = df_transformado
         self.estado["transformacion"] = True
+        print(df_transformado.head())
         
     def normalizacion(self):
         print("\n" + "=" * 29)
@@ -303,6 +304,56 @@ class MenuCLI:
         self.df = df_normalizado
         self.estado["normalizacion"] = True
         
+
+    def valores_atipicos(self):
+        print("\n" + "=" * 29)
+        print("Detección y Manejo de Valores Atípicos")
+        print("=" * 29)
+
+        
+        valores_atipicos = False
+        for i in self.dataManager.features:
+            if self.dataManager.has_outliers(i):  
+                valores_atipicos = True
+
+        if not valores_atipicos:
+            print("\n No se han detectado valores atípicos en las columnas seleccionadas.")
+            print("\n No es necesario aplicar ninguna transformación.")
+            self.estado["outliers"] = True
+            return
+            
+        print("Se han detectado valores atípicos en las variables de entrada seleccionadas: ")
+        for i in self.dataManager.outlier_columns:
+            print(f"\t - {i}")
+            
+        print("Seleccione una estrategia de manejo de outliers:")
+        print("\t[1] Eliminar filas con valores atípicos")
+        print("\t[2] Reemplazar valores atípicos con la mediana de la columna")
+        print("\t[3] Mantener valores atípicos sin cambios")
+        print("\t[4] Volver al menú principal")
+        opcion = int(input("Seleccione una opción: "))
+
+        if opcion == 1:
+            df_sin_outliers = self.dataManager.remove_outliers(self.dataManager.outlier_columns)
+            print("Eliminación de outliers completada.")
+        elif opcion == 2:
+            df_sin_outliers = self.dataManager.replace_outliers_with_median(self.dataManager.outlier_columns)
+            print("Reemplazo de outliers con la mediana completado.")
+        elif opcion == 3:
+            print("Manteniendo valores atípicos sin cambios.")
+        elif opcion == 4:
+            print("\n🔁 Reiniciando menú de manejo de valores atípicos...")
+            return
+        
+        else:
+            print("\nOpción no válida.")
+            return
+        
+        self.df = df_sin_outliers
+        self.estado["outliers"] = True
+
+
+
 
 
 
@@ -349,6 +400,14 @@ class MenuCLI:
                     print("\nPrimero debe transformar los datos categóricos.")
                 else:
                     self.normalizacion()
+
+            elif opcion == "2.5":
+                if not expandir:
+                    print("Opción no disponible. Seleccione '2' para expandir el menú.")
+                elif not self.estado["normalizacion"]:
+                    print("\nPrimero debe normalizar y escalar los datos.")
+                else:
+                    self.valores_atipicos()
 
                     
             elif opcion == "3":
