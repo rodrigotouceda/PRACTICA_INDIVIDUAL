@@ -112,6 +112,22 @@ class DataManager:
         else:
             return False
         
+    def to_categorical(self, columns: list[str], opcion: int):
+        """Convert specified columns to categorical."""
+        if opcion == 1:
+            self.data = self.to_one_hot(columns)
+            print("Transformación completada con One-Hot Encoding.")
+        elif opcion == 2:
+            self.data = self.to_label(columns)
+            print("Transformación completada con Label Encoding.")
+        elif opcion == 3:
+            print("\n🔁 Reiniciando menú de manejo de valores faltantes...")
+            return
+        else:
+            print("\nOpción no válida.")
+            return
+        return self.data
+        
     def is_normalizable(self, column: str) -> bool:
         """Check if a column is normalizable."""
         if (pd.api.types.is_numeric_dtype(self.data[column])) and (self.data[column].nunique() > 0.05 * len(self.data[column])
@@ -123,7 +139,8 @@ class DataManager:
             return False
         
     def has_outliers(self, column: str) -> bool:
-        if self.data[column].dtype in ['int64', 'float64']:
+        if self.is_normalizable(column):
+            """Check if a column has outliers using the IQR method."""
             Q1 = self.data[column].quantile(0.25)
             Q3 = self.data[column].quantile(0.75)
             IQR = Q3 - Q1
@@ -149,7 +166,8 @@ class DataManager:
         upper_bound = Q3 + 1.5 * IQR
 
         # Conserva solo los valores dentro de los límites
-        self.data = self.data[(self.data[column] >= lower_bound) & (self.data[column] <= upper_bound)]
+        self.data = self.data[self.data[column] >= lower_bound]
+        self.data = self.data[self.data[column] <= upper_bound]
         return self.data
     
     def replace_outliers_with_median(self, column: str):
@@ -209,9 +227,6 @@ class DataManager:
         scaler = StandardScaler()
         self.data[columns] = scaler.fit_transform(self.data[columns])
         return self.data
-
-        
-
         
 
     def get_data(self, key):

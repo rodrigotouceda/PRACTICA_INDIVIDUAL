@@ -7,7 +7,7 @@ import sqlite3
 class MenuCLI:
     def __init__(self):
         self.estado = {
-            "archivo_cargado": False,
+            "archivo_cargado": False, 
             "seleccion_columnas": False,
             "valores_faltantes": False,
             "transformacion": False,
@@ -138,7 +138,6 @@ class MenuCLI:
             return
         
 
-
        
     def seleccion_columnas(self):
         while True:
@@ -243,23 +242,17 @@ class MenuCLI:
         print("\t[2] Label Encoding(convierte categorías a números enteros)")
         print("\t[3] Regresar al menú principal")
         opcion = int(input("Seleccione una opción:"))
-
-        if opcion == 1:
-            df_transformado = self.dataManager.to_one_hot(self.dataManager.categoric_columns)
-            print("Transformación completada con One-Hot Encoding.")
-        elif opcion == 2:
-            df_transformado = self.dataManager.to_label(self.dataManager.categoric_columns)
-            print("Transformación completada con Label Encoding.")
-        elif opcion == 3:
-            print("\n🔁 Reiniciando menú de manejo de valores faltantes...")
-            return
-        else:
-            print("\nOpción no válida.")
-            return
         
+        df_transformado = self.dataManager.to_categorical(self.dataManager.categoric_columns, opcion)
+        if df_transformado is None:
+            return
+
         self.df = df_transformado
         self.estado["transformacion"] = True
-        print(df_transformado.head())
+           
+
+        
+
         
     def normalizacion(self):
         print("\n" + "=" * 29)
@@ -309,7 +302,7 @@ class MenuCLI:
         print("\n" + "=" * 29)
         print("Detección y Manejo de Valores Atípicos")
         print("=" * 29)
-
+        self.dataManager.outlier_columns = []
         
         valores_atipicos = False
         for i in self.dataManager.features:
@@ -334,23 +327,27 @@ class MenuCLI:
         opcion = int(input("Seleccione una opción: "))
 
         if opcion == 1:
-            df_sin_outliers = self.dataManager.remove_outliers(self.dataManager.outlier_columns)
+            self.df = self.dataManager.remove_outliers(self.dataManager.outlier_columns)
             print("Eliminación de outliers completada.")
+            self.estado["outliers"] = True
         elif opcion == 2:
-            df_sin_outliers = self.dataManager.replace_outliers_with_median(self.dataManager.outlier_columns)
+            self.df = self.dataManager.replace_outliers_with_median(self.dataManager.outlier_columns)
             print("Reemplazo de outliers con la mediana completado.")
+            self.estado["outliers"] = True
         elif opcion == 3:
             print("Manteniendo valores atípicos sin cambios.")
+            self.estado["outliers"] = True
+            return
         elif opcion == 4:
             print("\n🔁 Reiniciando menú de manejo de valores atípicos...")
+            self.estado["outliers"] = True 
             return
         
         else:
             print("\nOpción no válida.")
             return
         
-        self.df = df_sin_outliers
-        self.estado["outliers"] = True
+       
 
 
 
