@@ -308,7 +308,6 @@ class MenuCLI:
         print("\n" + "=" * 29)
         print("Detección y Manejo de Valores Atípicos")
         print("=" * 29)
-        self.dataManager.outlier_columns = []
         
         valores_atipicos = False
         for i in self.dataManager.new_features:

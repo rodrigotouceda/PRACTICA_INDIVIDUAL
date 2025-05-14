@@ -199,26 +199,31 @@ class DataManager:
                 # Conserva solo los valores dentro de los límites
                 self.data = self.data[self.data[column] >= lower_bound]
                 self.data = self.data[self.data[column] <= upper_bound]
-        print(self.data)
         return self.data
     
-    def replace_outliers_with_median(self, column: str):
+    def replace_outliers_with_median(self, columns: list[str]):
         """Reemplaza los outliers en la columna especificada con la mediana de esa columna."""
-        if pd.api.types.is_numeric_dtype(self.data[column]):
-            Q1 = self.data[column].quantile(0.25)
-            Q3 = self.data[column].quantile(0.75)
-            IQR = Q3 - Q1
-    
-            lower_bound = Q1 - 1.5 * IQR
-            upper_bound = Q3 + 1.5 * IQR
-    
-            # Calcula la mediana
-            median_value = self.data[column].median()
-    
-            # Reemplaza los outliers con la mediana
-            mask_outliers = (self.data[column] < lower_bound) | (self.data[column] > upper_bound)
-            self.data.loc[mask_outliers, column] = median_value
-    
+        for column in columns:
+            print(column)
+            if column not in self.outlier_columns:
+                continue
+            else:
+
+                Q1 = self.data[column].quantile(0.25)
+                Q3 = self.data[column].quantile(0.75)
+                IQR = Q3 - Q1
+
+                lower_bound = Q1 - 1.5 * IQR
+                upper_bound = Q3 + 1.5 * IQR
+
+                # Calcula la mediana
+                median_value = self.data[column].median()
+
+                outliers_mask = (self.data[column] < lower_bound) | (self.data[column] > upper_bound)
+
+                # Aquí está el punto crítico: asegúrate de usar .loc para modificar
+                self.data.loc[outliers_mask, column] = median_value
+
         return self.data
     
 
