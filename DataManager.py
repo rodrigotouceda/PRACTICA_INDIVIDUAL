@@ -4,13 +4,18 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler
 class DataManager:
     def __init__(self, dataframe: pd.DataFrame):
         """Initialize DataManager with a pandas DataFrame."""
-        self.data = dataframe
+        self.original_data = dataframe
+        self.data = dataframe.copy()
         self.columns = dataframe.columns.tolist()
-        self.features = None
-        self.target = None
+        self.features = []
+        self.target = []
+        self.new_features = []
         self.categoric_columns = []
+        self.original_categoric_columns = []
         self.normalizable_columns = []
+        self.original_normalizable_columns = []
         self.outlier_columns = []
+        self.one_hot_features = []
 
     def get_columns(self):
         """Get the list of columns in the DataFrame."""
@@ -99,18 +104,29 @@ class DataManager:
         return self.data
     
 
-    def is_categorical(self, column: str) -> bool:
+    def is_categorical(self, column: str, og_df = False) -> bool:
         """Check if a column is categorical."""
-        
-        if (pd.api.types.is_categorical_dtype(self.data[column]) 
-                or pd.api.types.is_object_dtype(self.data[column]) and self.data[column].nunique() < 0.05 * len(self.data[column]) 
-                or pd.api.types.is_numeric_dtype(self.data[column]) and self.data[column].nunique() < 0.05 * len(self.data[column])
-    ):      
-            self.categoric_columns.append(column)
-            return True
-        
+        if not og_df:
+            if (pd.api.types.is_categorical_dtype(self.data[column]) 
+                    or pd.api.types.is_object_dtype(self.data[column]) and self.data[column].nunique() < 0.05 * len(self.data[column]) 
+                    or pd.api.types.is_numeric_dtype(self.data[column]) and self.data[column].nunique() < 0.05 * len(self.data[column])
+        ):      
+                self.categoric_columns.append(column)
+                return True
+
+            else:
+                return False
         else:
-            return False
+            if (pd.api.types.is_categorical_dtype(self.original_data[column]) 
+                    or pd.api.types.is_object_dtype(self.original_data[column]) and self.original_data[column].nunique() < 0.05 * len(self.original_data[column]) 
+                    or pd.api.types.is_numeric_dtype(self.original_data[column]) and self.original_data[column].nunique() < 0.05 * len(self.original_data[column])
+        ):      
+                self.original_categoric_columns.append(column)
+                return True
+
+            else:
+                return False
+
         
     def to_categorical(self, columns: list[str], opcion: int):
         """Convert specified columns to categorical."""
@@ -128,15 +144,24 @@ class DataManager:
             return
         return self.data
         
-    def is_normalizable(self, column: str) -> bool:
+    def is_normalizable(self, column: str, og_df = False) -> bool:
         """Check if a column is normalizable."""
-        if (pd.api.types.is_numeric_dtype(self.data[column])) and (self.data[column].nunique() > 0.05 * len(self.data[column])
-                and self.data[column].nunique() < 0.95 * len(self.data[column])):
-            self.normalizable_columns.append(column)
-            return True
-        
+        if not og_df:
+            if (pd.api.types.is_numeric_dtype(self.data[column])) and (self.data[column].nunique() > 0.05 * len(self.data[column])
+                    and self.data[column].nunique() < 0.95 * len(self.data[column])):
+                self.normalizable_columns.append(column)
+                return True
+
+            else:
+                return False
         else:
-            return False
+            if (pd.api.types.is_numeric_dtype(self.original_data[column])) and (self.original_data[column].nunique() > 0.05 * len(self.original_data[column])
+                    and self.original_data[column].nunique() < 0.95 * len(self.original_data[column])):
+                self.original_normalizable_columns.append(column)
+                return True
+
+            else:
+                return False
         
     def has_outliers(self, column: str) -> bool:
         if self.is_normalizable(column):
@@ -203,10 +228,11 @@ class DataManager:
             if col in columns:
                 # Añadir todas las nuevas columnas one-hot que provienen de esta
                 updated_features.extend([c for c in self.data.columns if c.startswith(col + '_')])
+                self.one_hot_features.extend([c for c in self.data.columns if c.startswith(col + '_')])
             elif col in self.data.columns:
                 updated_features.append(col)  # Si sigue existiendo, mantenerla
 
-        self.features = updated_features
+        self.new_features = updated_features
         return self.data
 
     
@@ -214,6 +240,7 @@ class DataManager:
         """Convert specified columns to label encoding."""
         for col in columns:
             self.data[col] = self.data[col].astype('category').cat.codes
+        self.new_features = self.features
         return self.data
     
     def min_max_scaler(self, columns: list[str]):

@@ -3,6 +3,7 @@ import pandas as pd
 from pathlib import Path
 from DataManager import DataManager
 import sqlite3
+from dataVisualizer import VisualizerCLI
 
 class MenuCLI:
     def __init__(self):
@@ -20,6 +21,9 @@ class MenuCLI:
         self.nombre_archivo = None
         self.df = None
         self.dataManager = None
+        self.preprocesado_completo = False
+        self.df_original = None
+        self.df_procesado = None
 
 
     def _mostrar_subetapas(self, indent=""):
@@ -82,6 +86,7 @@ class MenuCLI:
                 try:
                     df = reader.parse_file(ruta)
                     self.df = df
+                    self.df_original = df
                     self.dataManager = DataManager(df)
                     print("Datos cargados correctamente")
                     print("Número de filas: ", df.shape[0])
@@ -121,6 +126,7 @@ class MenuCLI:
             try:
                 df = reader.parse_sqlite_table(ruta, tablas[int(tabla_seleccionada) - 1])
                 self.df = df
+                self.df_original = df
                 self.dataManager = DataManager(df)
                 print("Datos cargados correctamente")
                 print("Número de filas: ", df.shape[0])
@@ -259,7 +265,7 @@ class MenuCLI:
         print("Normalización y Escalado")
         print("=" * 29)
         datos_normalizables = False
-        for i in self.dataManager.features:
+        for i in self.dataManager.new_features:
             if self.dataManager.is_normalizable(i):  
                 datos_normalizables = True
 
@@ -305,7 +311,7 @@ class MenuCLI:
         self.dataManager.outlier_columns = []
         
         valores_atipicos = False
-        for i in self.dataManager.features:
+        for i in self.dataManager.new_features:
             if self.dataManager.has_outliers(i):  
                 valores_atipicos = True
 
@@ -330,26 +336,39 @@ class MenuCLI:
             self.df = self.dataManager.remove_outliers(self.dataManager.outlier_columns)
             print("Eliminación de outliers completada.")
             self.estado["outliers"] = True
+            self.preprocesado_completo = True
+            self.df_procesado = self.df
         elif opcion == 2:
             self.df = self.dataManager.replace_outliers_with_median(self.dataManager.outlier_columns)
             print("Reemplazo de outliers con la mediana completado.")
             self.estado["outliers"] = True
+            self.preprocesado_completo = True
+            self.df_procesado = self.df
         elif opcion == 3:
             print("Manteniendo valores atípicos sin cambios.")
             self.estado["outliers"] = True
+            self.preprocesado_completo = True
+            self.df_procesado = self.df
             return
         elif opcion == 4:
-            print("\n🔁 Reiniciando menú de manejo de valores atípicos...")
-            self.estado["outliers"] = True 
+            print("\n🔁 Volviendo al menú principal") 
             return
-        
         else:
             print("\nOpción no válida.")
             return
         
        
 
+    def visualizar_datos(self):
 
+        if self.preprocesado_completo:
+            visualizador = VisualizerCLI(self.df_original, self.df_procesado, self.dataManager.features, self.dataManager.new_features, self.dataManager)
+            visualizador.mostrar_menu()
+
+            if visualizador.visualizacion_completa():
+                self.estado['visualizacion_completada'] = True
+            else:
+                print("No es posible visualizar los datos hasta que se complete el preprocesado.")
 
 
 
@@ -410,7 +429,8 @@ class MenuCLI:
             elif opcion == "3":
                 if all([self.estado[k] for k in ["seleccion_columnas", "valores_faltantes", "transformacion", "normalizacion", "outliers"]]):
                     self.estado["visualizacion"] = True
-                    print("\nVisualización completada.")
+                    self.visualizar_datos()
+                    print("\nVisualización de datos completada.")
                 else:
                     print("\nDebe completar todo el preprocesado antes de visualizar.")
             elif opcion == "4":
@@ -434,18 +454,23 @@ class MenuCLI:
         print("Menú Principal")
         print("=" * 29)
 
+        
         # Opción 1: Cargar datos
         archivo_estado = f"(archivo: {self._nombre_archivo})" if self.estado["archivo_cargado"] else "(ningún archivo cargado)"
         check = "[✓]" if self.estado["archivo_cargado"] else "[-]"
         print(f"{check} 1. Cargar datos {archivo_estado}")
-
+ 
         # Opción 2: Preprocesado
-        if not self.estado["archivo_cargado"]:
+        if not self.estado["archivo_cargado"] and not self.preprocesado_completo:
             print("[✗] 2. Preprocesado de datos (requiere carga de datos)")
-        else:
+        elif self.estado["archivo_cargado"] and not self.preprocesado_completo:
             print("[-] 2. Preprocesado de datos")
             if expandir_subetapas:
                 self._mostrar_subetapas(indent="\t")  # Le pasamos una tabulación
+        else:
+            check = "[✓]"
+            print(f"{check} 2. Preprocesado de datos (completado)")
+            self._mostrar_subetapas(indent="\t")
 
 
         # Opción 3: Visualización
