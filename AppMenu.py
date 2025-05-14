@@ -338,6 +338,7 @@ class MenuCLI:
             self.estado["outliers"] = True
             self.preprocesado_completo = True
             self.df_procesado = self.df
+            print(self.df_procesado.head())
         elif opcion == 2:
             self.df = self.dataManager.replace_outliers_with_median(self.dataManager.outlier_columns)
             print("Reemplazo de outliers con la mediana completado.")

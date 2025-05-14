@@ -181,18 +181,25 @@ class DataManager:
 
   
     
-    def remove_outliers(self, column: str):
+    def remove_outliers(self, columns: list[str]):
         """Elimina las filas que contienen outliers en la columna especificada usando el método IQR."""
-        Q1 = self.data[column].quantile(0.25)
-        Q3 = self.data[column].quantile(0.75)
-        IQR = Q3 - Q1
+        print(self.data)
+        for column in columns:
+            if column not in self.normalizable_columns:
+                continue
+            else:
 
-        lower_bound = Q1 - 1.5 * IQR
-        upper_bound = Q3 + 1.5 * IQR
+                Q1 = self.data[column].quantile(0.25)
+                Q3 = self.data[column].quantile(0.75)
+                IQR = Q3 - Q1
 
-        # Conserva solo los valores dentro de los límites
-        self.data = self.data[self.data[column] >= lower_bound]
-        self.data = self.data[self.data[column] <= upper_bound]
+                lower_bound = Q1 - 1.5 * IQR
+                upper_bound = Q3 + 1.5 * IQR
+
+                # Conserva solo los valores dentro de los límites
+                self.data = self.data[self.data[column] >= lower_bound]
+                self.data = self.data[self.data[column] <= upper_bound]
+        print(self.data)
         return self.data
     
     def replace_outliers_with_median(self, column: str):

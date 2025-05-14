@@ -5,12 +5,33 @@ from DataManager import DataManager
 
 class VisualizerCLI:
     def __init__(self, df_original: pd.DataFrame, df_procesado: pd.DataFrame, original_features: list[str], processed_features: list[str], data_manager: DataManager):
+        
         self.df_original = df_original
         self.df_procesado = df_procesado
         self.visualizacion_completada = False
         self.original_features = original_features
         self.processed_features = processed_features
         self.data_manager = data_manager
+        self.og_categorical_features = []
+        self.new_categorical_features = []
+        self.og_numerical_features = []
+        self.one_hot_features = []
+        self.new_numerical_features = []
+
+        for feature in self.original_features:
+            
+            if self.data_manager.is_categorical(feature, True):
+                self.og_categorical_features.append(feature)
+            elif self.data_manager.is_normalizable(feature, True):
+                self.og_numerical_features.append(feature)
+
+        for feature in self.processed_features:
+            if feature in self.data_manager.one_hot_features:
+                self.one_hot_features.append(feature)
+            elif feature in self.og_categorical_features:
+                self.new_categorical_features.append(feature)
+            elif feature in self.og_numerical_features:
+                self.new_numerical_features.append(feature)
         
 
     def mostrar_menu(self):
@@ -30,7 +51,7 @@ class VisualizerCLI:
             if opcion == "1":
                 self.mostrar_resumen_estadistico()
             elif opcion == "2":
-                self.generar_histogramas()
+                self.mostrar_histogramas_variables_numericas()
             elif opcion == "3":
                 self.graficos_dispersion()
             elif opcion == "4":
@@ -43,36 +64,14 @@ class VisualizerCLI:
                 print("Opción no válida. Inténtelo de nuevo.")
 
     def mostrar_resumen_estadistico(self):
-        og_categorical_features = []
-        new_categorical_features = []
-        og_numerical_features = []
-        one_hot_features = []
-        new_numerical_features = []
-
-        print(self.original_features)
-        for feature in self.original_features:
-            print(feature)
-            if self.data_manager.is_categorical(feature, True):
-                og_categorical_features.append(feature)
-            elif self.data_manager.is_normalizable(feature, True):
-                og_numerical_features.append(feature)
-
-        for feature in self.processed_features:
-            if feature in self.data_manager.one_hot_features:
-                one_hot_features.append(feature)
-            elif feature in og_categorical_features:
-                new_categorical_features.append(feature)
-            elif feature in og_numerical_features:
-                new_numerical_features.append(feature)
             
-
         print("\nResumen estadístico de las variables seleccionadas (antes del preprocesado):")
         print("\n================================================================")
         print("Resumen estadístico de variables categóricas (ANTES del preprocesado):")
         print("================================================================")
 
         resumen_categorico = []
-        for feature in og_categorical_features:
+        for feature in self.og_categorical_features:
             frecuencia = self.df_original[feature].value_counts()
             proporciones = self.df_original[feature].value_counts(normalize=True)
             moda = self.df_original[feature].mode()[0]
@@ -97,7 +96,7 @@ class VisualizerCLI:
         print("================================================================")
 
         resumen_numerico = []
-        for feature in og_numerical_features:
+        for feature in self.og_numerical_features:
             media = self.df_original[feature].mean()
             mediana = self.df_original[feature].median()
             desviacion = self.df_original[feature].std()
@@ -122,13 +121,14 @@ class VisualizerCLI:
         print("\n================================================================")
         print("Resumen estadístico de variables categóricas (DESPUÉS del preprocesado):")
         print("================================================================")
-
-        resumen_categorico_procesado = []
-        if len(one_hot_features) > 0:
-            lista_columnas = one_hot_features
-        else:
-            lista_columnas = new_categorical_features
         
+        resumen_categorico_procesado = []
+        lista_columnas = []
+        if len(self.one_hot_features) > 0:
+            lista_columnas = self.one_hot_features
+        else:
+            lista_columnas = self.new_categorical_features
+
         for feature in lista_columnas:
             frecuencia = self.df_procesado[feature].value_counts()
             proporciones = self.df_procesado[feature].value_counts(normalize=True)
@@ -154,7 +154,7 @@ class VisualizerCLI:
         print("================================================================")
 
         resumen_numerico_procesado = []
-        for feature in new_numerical_features:
+        for feature in self.new_numerical_features:
             media = self.df_procesado[feature].mean()
             mediana = self.df_procesado[feature].median()
             desviacion = self.df_procesado[feature].std()
@@ -173,7 +173,7 @@ class VisualizerCLI:
                 "0.75": self.df_procesado[feature].quantile(0.75),
                 "Número de valores nulos": nulos
             })
-
+        
         resumen_df_numerico_procesado = pd.DataFrame(resumen_numerico_procesado)
         print(resumen_df_numerico_procesado.to_string(index=False))
         print("\n================================================================")
@@ -181,12 +181,32 @@ class VisualizerCLI:
 
 
         
-    def generar_histogramas(self):
-        print("\nGenerando histogramas de variables numéricas (después del preprocesado)...")
-        self.df_procesado.select_dtypes(include='number').hist(bins=20, figsize=(12, 8))
-        plt.suptitle("Histogramas de variables numéricas (post-preprocesado)")
-        plt.tight_layout()
-        plt.show()
+    def mostrar_histogramas_variables_numericas(self):
+        print("\n=======================================")
+        print("Histograma de variables numéricas (ANTES del preprocesado):")
+        print("=======================================")
+        for col in self.og_numerical_features:
+            plt.figure(figsize=(6, 4))
+            sns.histplot(self.df_original[col].dropna(), bins=30, kde=True, color='skyblue')
+            plt.title(f'Histograma de {col} (Original)')
+            plt.xlabel(col)
+            plt.ylabel('Frecuencia')
+            plt.grid(True)
+            plt.tight_layout()
+            plt.show()
+
+        print("\n=======================================")
+        print("Histograma de variables numéricas (DESPUÉS del preprocesado):")
+        print("=======================================")
+        for col in self.new_numerical_features:
+            plt.figure(figsize=(6, 4))
+            sns.histplot(self.df_procesado[col].dropna(), bins=30, kde=True, color='lightgreen')
+            plt.title(f'Histograma de {col} (Procesado)')
+            plt.xlabel(col)
+            plt.ylabel('Frecuencia')
+            plt.grid(True)
+            plt.tight_layout()
+            plt.show()
 
     def graficos_dispersion(self):
         print("\nGenerando gráficos de dispersión (antes vs. después)...")
