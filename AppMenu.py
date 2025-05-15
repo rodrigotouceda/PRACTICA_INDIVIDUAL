@@ -4,6 +4,7 @@ from pathlib import Path
 from DataManager import DataManager
 import sqlite3
 from dataVisualizer import VisualizerCLI
+from FileExporter import ExporterCLI
 
 class MenuCLI:
     def __init__(self):
@@ -187,11 +188,11 @@ class MenuCLI:
             print("Manejo de Valores Faltantes")
             print("=" * 29)
 
+            self.dataManager.missing_values_columns = []
             valores_faltantes = False
             for i in self.dataManager.features:
-                if self.dataManager.data[i].isnull().any():
+                if self.dataManager.has_missing_values(i):
                     valores_faltantes = True
-                    break
 
             if not valores_faltantes:
                 print("\nNo se han detectado valores faltantes en las columnas seleccionadas.")
@@ -202,9 +203,8 @@ class MenuCLI:
 
             print("\n Se han detectado valores faltantes en las siguientes columnas:")
 
-            for x in self.dataManager.features:
-                if self.dataManager.data[x].isnull().sum() > 0:
-                    print(f"\t - {x}: {self.dataManager.data[x].isnull().sum()} valores faltantes")
+            for x in self.dataManager.missing_values_columns:
+                print(f"\t - {x}: {self.dataManager.data[x].isnull().sum()} valores faltantes")
 
             print("\n Seleccione una estrategia para manejar los valores faltantes:")
             print("\t[1] Eliminar filas con valores faltantes")
@@ -217,7 +217,7 @@ class MenuCLI:
             try:
                 opcion = int(input("Seleccione una opción: "))
 
-                managed_df = self.dataManager.manage_missing_values(self.dataManager.features, opcion)
+                managed_df = self.dataManager.manage_missing_values(self.dataManager.missing_values_columns, opcion)
                 if managed_df is not None:
                     self.df = managed_df
                     self.dataManager.data = managed_df  
@@ -469,6 +469,8 @@ class MenuCLI:
                     print("\nDebe completar todo el preprocesado antes de visualizar.")
             elif opcion == "4":
                 if self.estado["visualizacion"]:
+                    exportador = ExporterCLI(self.df_procesado, self.estado)
+                    exportador.exportar_datos()
                     self.estado["exportacion"] = True
                     print("\nDatos exportados correctamente.")
                 else:

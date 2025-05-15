@@ -10,6 +10,7 @@ class DataManager:
         self.features = []
         self.target = []
         self.new_features = []
+        self.missing_values_columns = []
         self.categoric_columns = []
         self.original_categoric_columns = []
         self.normalizable_columns = []
@@ -71,9 +72,7 @@ class DataManager:
         Returns:
             None or DataFrame: Returns the updated DataFrame or None if cancelled.
         """
-        print(f"METHOD: {method}")
-        print("Distribución de SibSp ANTES de manejar NaNs:")
-        print(self.data["SibSp"].value_counts().sort_index())
+        print(self.data.dtypes[columns])
         if method == 1:
 
             self.data = self.data.dropna(subset=columns)
@@ -105,17 +104,23 @@ class DataManager:
             print("\n⚠️ Error: Opción no válida.")
             return None
         
-        print("Distribución de SibSp DESPUES de manejar NaNs:")
-        print(self.data["SibSp"].value_counts().sort_index())
         return self.data
+    
+    def has_missing_values(self, column: str) -> bool:
+        """Check if a column has missing values."""
+        if self.data[column].isnull().sum() > 0:
+            self.missing_values_columns.append(column)
+            return True
+        else:
+            return False
     
 
     def is_categorical(self, column: str, og_df = False) -> bool:
         """Check if a column is categorical."""
         if not og_df:
             if (pd.api.types.is_categorical_dtype(self.data[column]) 
-                    or pd.api.types.is_object_dtype(self.data[column]) and self.data[column].nunique() < 0.05 * len(self.data[column]) 
-                    or pd.api.types.is_numeric_dtype(self.data[column]) and self.data[column].nunique() < 0.05 * len(self.data[column])
+                    or pd.api.types.is_object_dtype(self.data[column]) and self.data[column].nunique() < 7
+                    or pd.api.types.is_numeric_dtype(self.data[column]) and self.data[column].nunique() < 7
         ):      
                 self.categoric_columns.append(column)
                 return True
