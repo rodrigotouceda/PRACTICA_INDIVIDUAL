@@ -1,5 +1,4 @@
 from AppMenu import MenuCLI
-from FileReader import FileReader
 
 
 if __name__ == "__main__":

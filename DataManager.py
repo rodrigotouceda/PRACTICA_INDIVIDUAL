@@ -71,7 +71,11 @@ class DataManager:
         Returns:
             None or DataFrame: Returns the updated DataFrame or None if cancelled.
         """
+        print(f"METHOD: {method}")
+        print("Distribución de SibSp ANTES de manejar NaNs:")
+        print(self.data["SibSp"].value_counts().sort_index())
         if method == 1:
+
             self.data = self.data.dropna(subset=columns)
 
         elif method == 2:
@@ -100,7 +104,9 @@ class DataManager:
         else:
             print("\n⚠️ Error: Opción no válida.")
             return None
-
+        
+        print("Distribución de SibSp DESPUES de manejar NaNs:")
+        print(self.data["SibSp"].value_counts().sort_index())
         return self.data
     
 
@@ -138,10 +144,10 @@ class DataManager:
             print("Transformación completada con Label Encoding.")
         elif opcion == 3:
             print("\n🔁 Reiniciando menú de manejo de valores faltantes...")
-            return
+            return None
         else:
             print("\nOpción no válida.")
-            return
+            return None
         return self.data
         
     def is_normalizable(self, column: str, og_df = False) -> bool:
@@ -231,8 +237,14 @@ class DataManager:
     def to_one_hot(self, columns: list[str]):
         """One-hot encode columns and update only selected features."""
         original_features = self.features.copy()
+        for col in columns:
+            print(f"Valores únicos en {col}: {self.data[col].unique()}")
 
         self.data = pd.get_dummies(self.data, columns=columns)
+        
+        for col in columns:
+            one_hot_cols = [c for c in self.data.columns if c.startswith(col + '_')]
+            print(f"Columnas one-hot generadas para {col}: {one_hot_cols}")
 
         # Actualizar solo las columnas derivadas de las seleccionadas
         updated_features = []
