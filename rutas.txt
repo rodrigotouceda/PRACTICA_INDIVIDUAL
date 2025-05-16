@@ -1,6 +1,0 @@
-"C:\Users\usuario\Documents\INGENIERÍA SOFTWARE 2º\PRACTICA_INDIVIDUAL\Housing\housing.db" db
-"C:\Users\usuario\Documents\INGENIERÍA SOFTWARE 2º\PRACTICA_INDIVIDUAL\Housing\housing.xlsx" Excel
-"C:\Users\usuario\Documents\INGENIERÍA SOFTWARE 2º\PRACTICA_INDIVIDUAL\Housing\housing.csv" Csv
-"C:\Users\usuario\Documents\INGENIERÍA SOFTWARE 2º\PRACTICA_INDIVIDUAL\titanic_survival.csv" CSV 
-"C:\Users\usuario\Documents\INGENIERÍA SOFTWARE 2º\PRACTICA_INDIVIDUAL\titanic_survival.xlsx" EXCEL 
-"C:\Users\usuario\Documents\INGENIERÍA SOFTWARE 2º\PRACTICA_INDIVIDUAL\titanic_survival (1).db" DB
