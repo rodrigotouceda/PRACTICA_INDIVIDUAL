@@ -8,6 +8,11 @@ from FileExporter import ExporterCLI
 
 class MenuCLI:
     def __init__(self):
+        """
+        Inicializa la clase MenuCLI con los estados del flujo de preprocesamiento,
+        variables para almacenar los datos cargados, su versión procesada, y otros
+        indicadores de estado.
+        """
         self.estado = {
             "archivo_cargado": False, 
             "seleccion_columnas": False,
@@ -28,6 +33,12 @@ class MenuCLI:
         self.no_datos_numericos = False
 
     def _mostrar_subetapas(self, indent=""):
+        """
+        Muestra en consola las subetapas del preprocesamiento con su estado actual.
+        
+        Args:
+            indent (str): Sangría opcional para formatear visualmente el texto mostrado.
+        """
         etapas = [
             ("seleccion_columnas", "2.1 Selección de columnas"),
             ("valores_faltantes", "2.2 Manejo de valores faltantes"),
@@ -54,6 +65,15 @@ class MenuCLI:
     
 
     def _nombre_etapa(self, clave):
+        """
+        Retorna el nombre descriptivo de una etapa a partir de su clave interna.
+
+        Args:
+            clave (str): Clave de etapa como 'transformacion', 'normalizacion', etc.
+
+        Returns:
+            str: Nombre legible de la etapa.
+        """
         nombres = {
             "seleccion_columnas": "selección de columnas",
             "valores_faltantes": "manejo de valores faltantes",
@@ -65,6 +85,10 @@ class MenuCLI:
 
 
     def cargar_datos(self):
+        """
+        Permite al usuario cargar un archivo de datos (CSV, Excel o base de datos SQLite).
+        Actualiza los estados y estructuras internas con los datos cargados.
+        """
         print("\n" + "=" * 29)
         print("Cargar datos")
         print("=" * 29)
@@ -147,6 +171,10 @@ class MenuCLI:
 
        
     def seleccion_columnas(self):
+        """
+        Permite al usuario seleccionar las columnas de entrada (features) y salida (target).
+        Almacena la selección en el DataManager y actualiza el estado del sistema.
+        """
         while True:
             print("\n" + "=" * 29)
             print("Selección de Columnas")
@@ -183,6 +211,10 @@ class MenuCLI:
         
     
     def valores_faltantes(self):
+        """
+        Detecta y permite manejar valores faltantes en las columnas seleccionadas.
+        Ofrece varias estrategias de imputación o eliminación.
+        """
         while True:
             print("\n" + "=" * 29)
             print("Manejo de Valores Faltantes")
@@ -234,6 +266,10 @@ class MenuCLI:
 
 
     def transformacion_datos_categoricos(self):
+        """
+        Detecta columnas categóricas y permite al usuario transformarlas utilizando 
+        técnicas como One-Hot Encoding o Label Encoding.
+        """
         while True:
             print("\n" + "=" * 29)
             print("Transformación de Datos Categóricos")
@@ -282,6 +318,10 @@ class MenuCLI:
                 
         
     def normalizacion(self):
+        """
+        Permite aplicar técnicas de normalización o escalado a las columnas numéricas
+        de entrada: Min-Max o Z-score.
+        """
         while True:    
             print("\n" + "=" * 29)
             print("Normalización y Escalado")
@@ -332,6 +372,10 @@ class MenuCLI:
         
 
     def valores_atipicos(self):
+        """
+        Detecta valores atípicos en las columnas seleccionadas y permite manejarlos
+        con distintas estrategias: eliminación, reemplazo por la mediana o mantenerlos.
+        """
         while True:
             print("\n" + "=" * 29)
             print("Detección y Manejo de Valores Atípicos")
@@ -382,6 +426,10 @@ class MenuCLI:
 
 
     def visualizar_datos(self):
+        """
+        Llama a la herramienta de visualización si hay datos numéricos disponibles. 
+        En caso contrario, muestra un mensaje de advertencia.
+        """
         if self.no_datos_numericos:
             print('No hay variables numéricas necesarias para visualizar los datos')
             self.estado['visualizacion'] = True
@@ -402,6 +450,19 @@ class MenuCLI:
 
 
     def iniciar(self):
+        """
+        Inicia el bucle principal de la aplicación CLI.
+
+        Muestra el menú principal de forma continua y responde a las entradas del usuario,
+        ejecutando las acciones correspondientes como carga de datos, preprocesamiento,
+        visualización, exportación o salida.
+
+        El flujo está guiado por el estado actual de la aplicación, y se valida
+        que cada etapa se complete antes de habilitar la siguiente.
+
+        Controla la expansión del submenú de preprocesamiento y verifica
+        que se sigan los pasos en orden secuencial.
+        """
         expandir = False
         while True:
             self.mostrar_menu(expandir)  # por defecto sin subetapas
@@ -481,6 +542,20 @@ class MenuCLI:
 
 
     def mostrar_menu(self, expandir_subetapas=False):
+        """
+        Muestra el menú principal de la aplicación, reflejando el estado actual de cada etapa.
+
+        Si `expandir_subetapas` es True, también se listan las subetapas del preprocesamiento
+        con indentación visual.
+
+        Indica con símbolos el estado de cada módulo:
+            [✓] Completado
+            [-] Disponible pero no completado
+            [✗] No disponible (por dependencia no satisfecha)
+
+        Parameters:
+            expandir_subetapas (bool): Si es True, se muestran las subetapas del preprocesado.
+        """
         print("\n" + "=" * 29)
         print("Menú Principal")
         print("=" * 29)
@@ -523,6 +598,14 @@ class MenuCLI:
 
 
     def _confirmar_salida(self):
+        """
+        Solicita al usuario confirmación antes de cerrar la aplicación.
+    
+        Muestra un mensaje con opciones para confirmar o cancelar la salida.
+        
+        Returns:
+            bool: True si el usuario confirma la salida, False en caso contrario.
+        """
         print("\n" + "=" * 29)
         print("Salir de la Aplicación")
         print("=" * 29)

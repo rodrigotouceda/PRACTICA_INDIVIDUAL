@@ -1,4 +1,4 @@
-"""Module for reading various file formats into pandas DataFrames."""
+"""Módulo para leer distintos formatos de archivo en DataFrames de pandas."""
 
 import pandas as pd
 from pandas import DataFrame
@@ -8,47 +8,47 @@ import time
 
 
 class ParseError(Exception):
-    """Custom error for unsupported file formats."""
+    """Error personalizado para problemas al analizar archivos."""
     pass
 
 class FormatError(Exception):
-    """Custom error for unsupported file formats."""
+    """Error personalizado para formatos de archivo no soportados."""
     pass
 
 
 class FileReader:
-    """Parses files and converts them into pandas DataFrames.
+    """Analiza archivos y los convierte en DataFrames de pandas.
     
-    Supports CSV, Excel, and SQLite database files.
+    Soporta archivos CSV, Excel y bases de datos SQLite.
     """
 
     def __init__(self):
-        """Initialize FileReader with allowed file extensions."""
+        """Inicializa FileReader con las extensiones de archivo permitidas."""
         self._allowed_extensions = {'.csv', '.xlsx', '.xls', '.db', '.sqlite'}
 
     def _check_format(self, extension: str) -> None:
-        """Validate if file format is supported.
+        """Valida si el formato de archivo es soportado.
         
         Args:
-            extension: File extension to validate.
+            extension: Extensión del archivo a validar.
             
         Raises:
-            FormatError: If file extension is not supported.
+            FormatError: Si la extensión no está permitida.
         """
         if extension not in self._allowed_extensions:
             raise FormatError
 
     def parse_file(self, file_name: str) -> DataFrame:
-        """Parse the given file into a pandas DataFrame.
+        """Analiza el archivo dado y lo convierte en un DataFrame de pandas.
         
         Args:
-            file_name: Path to the file to be parsed.
+            file_name: Ruta del archivo a analizar.
             
         Returns:
-            DataFrame containing the parsed data.
+            DataFrame con los datos analizados.
             
         Raises:
-            Various exceptions based on file reading errors.
+            Varias excepciones dependiendo de errores al leer el archivo.
         """
         extension = Path(file_name).suffix
 
@@ -62,19 +62,19 @@ class FileReader:
 
             return df
         except:
-            raise ParseError('ERROR: could not parse file')
+            raise ParseError('ERROR: no se pudo analizar el archivo')
         
     def get_db_tables(self, file_name: str) -> list[str]:
-        """Get list of tables from a SQLite database file.
+        """Obtiene una lista de tablas de un archivo de base de datos SQLite.
 
         Args:
-            file_name: Path to the SQLite file.
+            file_name: Ruta del archivo SQLite.
 
         Returns:
-            List of table names.
+            Lista con los nombres de las tablas.
 
         Raises:
-            ParseError: If the database can't be accessed or is invalid.
+            ParseError: Si no se puede acceder a la base de datos o es inválida.
         """
         extension = Path(file_name).suffix
 
@@ -92,18 +92,18 @@ class FileReader:
             return result['name'].tolist()
 
         except Exception:
-            raise ParseError('ERROR: could not list tables from database')
+            raise ParseError('ERROR: no se pudieron listar las tablas de la base de datos')
 
 
     def parse_sqlite_table(self, file_name: str, table_name: str) -> DataFrame:
-        """Parse a specific table from a SQLite database file.
+        """Analiza una tabla específica de un archivo de base de datos SQLite.
         
         Args:
-            file_name: Path to the SQLite file.
-            table_name: Name of the table to load.
+            file_name: Ruta del archivo SQLite.
+            table_name: Nombre de la tabla a cargar.
             
         Returns:
-            DataFrame with the table contents.
+            DataFrame con el contenido de la tabla.
         """
         try:
             conn = sqlite3.connect(file_name)
@@ -111,21 +111,20 @@ class FileReader:
             conn.close()
             return df
         except Exception:
-            raise ParseError('ERROR: could not read the specified table')
-    
+            raise ParseError('ERROR: no se pudo leer la tabla especificada')
 
 
         except FormatError:
-            raise ParseError('ERROR: unsupported file format')
+            raise ParseError('ERROR: formato de archivo no soportado')
         except pd.errors.EmptyDataError:
-            raise ParseError('ERROR: This file might be empty or corrupted')
+            raise ParseError('ERROR: el archivo puede estar vacío o dañado')
         except pd.errors.ParserError:
-            raise ParseError('ERROR: this file could not be parsed')
+            raise ParseError('ERROR: el archivo no se pudo analizar')
         except sqlite3.DatabaseError:
-            raise ParseError('ERROR: an error occurred with your database')
+            raise ParseError('ERROR: ocurrió un error con la base de datos')
         except sqlite3.OperationalError:
-            raise ParseError('ERROR: could not access your database')
+            raise ParseError('ERROR: no se pudo acceder a la base de datos')
         except FileNotFoundError:
-            raise ParseError('ERROR: file not found')
+            raise ParseError('ERROR: archivo no encontrado')
         except Exception as e:
-            raise ParseError(f'ERROR: unknown error, could not read file')
+            raise ParseError(f'ERROR: error desconocido, no se pudo leer el archivo')
