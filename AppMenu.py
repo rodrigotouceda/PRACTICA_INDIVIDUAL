@@ -25,7 +25,7 @@ class MenuCLI:
         self.preprocesado_completo = False
         self.df_original = None
         self.df_procesado = None
-
+        self.no_datos_numericos = False
 
     def _mostrar_subetapas(self, indent=""):
         etapas = [
@@ -153,13 +153,13 @@ class MenuCLI:
             print("=" * 29)
     
             print("\n Columnas disponibles en los datos: ")
-            self.dataManager.display_columns()
+            self.dataManager.mostrar_columnas()
 
             try:
                 features = input("\nIngrese los números de las columnas de entrada (features), separados por comas: ")
                 target = input("\nIngrese el número de la columna de salida (target): ")
 
-                X, y = self.dataManager.select_columns(features, target)
+                X, y = self.dataManager.seleccionar_columnas(features, target)
 
                 if X is None or y is None:
                     continue
@@ -191,7 +191,7 @@ class MenuCLI:
             self.dataManager.missing_values_columns = []
             valores_faltantes = False
             for i in self.dataManager.features:
-                if self.dataManager.has_missing_values(i):
+                if self.dataManager.tiene_valores_faltantes(i):
                     valores_faltantes = True
 
             if not valores_faltantes:
@@ -217,7 +217,11 @@ class MenuCLI:
             try:
                 opcion = int(input("Seleccione una opción: "))
 
-                managed_df = self.dataManager.manage_missing_values(self.dataManager.missing_values_columns, opcion)
+                if opcion == 6:
+                    print("\n🔁 Volviendo al menú principal")
+                    break
+
+                managed_df = self.dataManager.manejar_valores_faltantes(self.dataManager.missing_values_columns, opcion)
                 if managed_df is not None:
                     self.df = managed_df
                     self.dataManager.data = managed_df  
@@ -238,7 +242,7 @@ class MenuCLI:
             datos_categoricos = False
             self.dataManager.categoric_columns = []
             for i in self.dataManager.features:
-                if self.dataManager.is_categorical(i):  
+                if self.dataManager.es_categorica(i):  
                     datos_categoricos = True
 
 
@@ -259,8 +263,11 @@ class MenuCLI:
             try:
                 opcion = int(input("Seleccione una opción:"))
 
+                if opcion == 3:
+                    print("\n🔁 Volviendo al menú principal")
+                    break
 
-                df_transformado = self.dataManager.to_categorical(self.dataManager.categoric_columns, opcion)
+                df_transformado = self.dataManager.a_categorica(self.dataManager.categoric_columns, opcion)
                 if df_transformado is not None:
 
                     self.df = df_transformado
@@ -273,10 +280,6 @@ class MenuCLI:
                 print("\nOpción no válida.")
                 continue
                 
-           
-
-        
-
         
     def normalizacion(self):
         while True:    
@@ -286,13 +289,14 @@ class MenuCLI:
             datos_normalizables = False
             self.dataManager.normalizable_columns = []
             for i in self.dataManager.new_features:
-                if self.dataManager.is_normalizable(i):  
+                if self.dataManager.es_normalizable(i):  
                     datos_normalizables = True
 
             if not datos_normalizables:
                 print("\n No se han detectado columnas numericas en las variables de entrada seleccionadas.")
                 print("\n No es necesario aplicar ninguna normalización.")
                 self.estado["normalizacion"] = True
+                self.no_datos_numericos = True
                 return
 
             print("Se han detectado columnas numéricas en las variables de entrada seleccionadas: ")
@@ -307,28 +311,24 @@ class MenuCLI:
             try:
                 opcion = int(input("Seleccione una opción:"))
 
-                if opcion == 1:
-                    df_normalizado = self.dataManager.min_max_scaler(self.dataManager.normalizable_columns)
-                    print("Normalización Min-Max completada.")
-                    self.df = df_normalizado
-                    self.estado["normalizacion"] = True
-                    break
-                elif opcion == 2:
-                    df_normalizado = self.dataManager.z_score_scaler(self.dataManager.normalizable_columns)
-                    print("Normalización Z-score completada.")
-                    self.df = df_normalizado
-                    self.estado["normalizacion"] = True
-                    break
-                elif opcion == 3:
+                if opcion == 3:
                     print("\n🔁 Volviendo al menú principal")
                     break
+
+                df_transformado = self.dataManager.normalizar(self.dataManager.normalizable_columns, opcion)
+                if df_transformado is not None:
+                    self.df = df_transformado
+                    self.estado["normalizacion"] = True
+                    self.preprocesado_completo = True
+                    break
                 else:
-                    print("\nOpción no válida.")
+                    print("Opción no válida.")
                     continue
 
             except:
                 print("\nOpción no válida.")
                 continue
+
         
 
     def valores_atipicos(self):
@@ -340,13 +340,14 @@ class MenuCLI:
             self.dataManager.outlier_columns = []
             valores_atipicos = False
             for i in self.dataManager.new_features:
-                if self.dataManager.has_outliers(i):  
+                if self.dataManager.tiene_outliers(i):  
                     valores_atipicos = True
 
             if not valores_atipicos:
                 print("\n No se han detectado valores atípicos en las columnas seleccionadas.")
                 print("\n No es necesario aplicar ninguna transformación.")
                 self.estado["outliers"] = True
+                self.preprocesado_completo = True
                 break
 
             print("Se han detectado valores atípicos en las variables de entrada seleccionadas: ")
@@ -361,49 +362,42 @@ class MenuCLI:
             try:
                 opcion = int(input("Seleccione una opción: "))
 
-                if opcion == 1:
-                    self.df = self.dataManager.remove_outliers(self.dataManager.outlier_columns)
-                    print("Eliminación de outliers completada.")
-                    self.estado["outliers"] = True
-                    self.preprocesado_completo = True
-                    self.df_procesado = self.df
-                    break
-                elif opcion == 2:
-                    self.df = self.dataManager.replace_outliers_with_median(self.dataManager.outlier_columns)
-                    print("Reemplazo de outliers con la mediana completado.")
-                    self.estado["outliers"] = True
-                    self.preprocesado_completo = True
-                    self.df_procesado = self.df
-                    break
-                elif opcion == 3:
-                    print("Manteniendo valores atípicos sin cambios.")
-                    self.estado["outliers"] = True
-                    self.preprocesado_completo = True
-                    self.df_procesado = self.df
-                    break
-                elif opcion == 4:
+                
+                if opcion == 4:
                     print("\n🔁 Volviendo al menú principal") 
                     break
-                else:
-                    print("\nOpción no válida.")
-                    continue
+
+                df_sin_atipicos = self.dataManager.manejar_atipicos(self.dataManager.outlier_columns, opcion)
+                if df_sin_atipicos is not None:
+
+                    self.estado["outliers"] = True
+                    self.preprocesado_completo = True
+                    self.df = df_sin_atipicos
+                    self.df_procesado = self.df
+                    break
         
             except:
-                print("\nOpción no válida.")
+                print("\nERROR.")
                 continue
 
 
     def visualizar_datos(self):
+        if self.no_datos_numericos:
+            print('No hay variables numéricas necesarias para visualizar los datos')
+            self.estado['visualizacion'] = True
+            return
         
         if self.preprocesado_completo:
             visualizador = VisualizerCLI(self.df_original, self.df_procesado, self.dataManager.features, self.dataManager.new_features, self.dataManager)
             visualizador.mostrar_menu()
 
             if visualizador.visualizacion_completa():
-                self.estado['visualizacion_completada'] = True
+                self.estado['visualizacion'] = True
             else:
                 print("No es posible visualizar los datos hasta que se complete el preprocesado.")
 
+
+        
 
 
 
@@ -462,8 +456,9 @@ class MenuCLI:
                     
             elif opcion == "3":
                 if all([self.estado[k] for k in ["seleccion_columnas", "valores_faltantes", "transformacion", "normalizacion", "outliers"]]):
-                    self.estado["visualizacion"] = True
+                    
                     self.visualizar_datos()
+                    self.estado["visualización"] = True
                     print("\nVisualización de datos completada.")
                 else:
                     print("\nDebe completar todo el preprocesado antes de visualizar.")
@@ -525,42 +520,6 @@ class MenuCLI:
 
         print("[✓] 5. Salir")
         print("Seleccione una opción: ", end='')
-
-
-
-    def _navegar_preprocesado(self):
-           
-            opcion = input("Seleccione una opción: ")
-
-            if opcion == "1":
-                self.seleccion_columnas()
-            elif opcion == "2":
-                if not self.estado["seleccion_columnas"]:
-                    print("\nPrimero debe seleccionar las columnas.")
-                else:
-                    self.estado["valores_faltantes"] = True
-                    print("\nManejo de valores faltantes completado.")
-            elif opcion == "3":
-                if not self.estado["valores_faltantes"]:
-                    print("\nPrimero debe manejar los valores faltantes.")
-                else:
-                    self.estado["transformacion"] = True
-                    print("\nTransformación de datos categóricos completada.")
-            elif opcion == "4":
-                if not self.estado["transformacion"]:
-                    print("\nPrimero debe transformar los datos categóricos.")
-                else:
-                    self.estado["normalizacion"] = True
-                    print("\nNormalización y escalado completados.")
-            elif opcion == "5":
-                if not self.estado["normalizacion"]:
-                    print("\nPrimero debe normalizar y escalar los datos.")
-                else:
-                    self.estado["outliers"] = True
-                    print("\nDetección y manejo de valores atípicos completados.")
-            else:
-                print("\nOpción no válida.")
-
 
 
     def _confirmar_salida(self):

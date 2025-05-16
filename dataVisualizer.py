@@ -22,9 +22,9 @@ class VisualizerCLI:
 
         for feature in self.original_features:
             
-            if self.data_manager.is_categorical(feature, True):
+            if self.data_manager.es_categorica(feature, True):
                 self.og_categorical_features.append(feature)
-            elif self.data_manager.is_normalizable(feature, True):
+            elif self.data_manager.es_normalizable(feature, True):
                 self.og_numerical_features.append(feature)
 
         for feature in self.processed_features:
@@ -229,7 +229,13 @@ class VisualizerCLI:
         print("\n=======================================")
         print("Gráficos de dispersión para todas las combinaciones 2 a 2")
         print("=======================================")
+
+        if len(self.og_numerical_features) < 2:
+            print('Se necesitan al menos 2 variables numericas para realizar graficos de dispersión')
+            return
+        
         combinaciones = list(itertools.combinations(self.og_numerical_features, 2))
+
         for var_x, var_y in combinaciones:
             if var_x not in self.df_procesado.columns or var_y not in self.df_procesado.columns:
                 continue  # Ignora combinaciones donde alguna variable no esté en el DataFrame procesado

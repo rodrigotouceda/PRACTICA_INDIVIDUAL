@@ -17,17 +17,13 @@ class DataManager:
         self.original_normalizable_columns = []
         self.outlier_columns = []
         self.one_hot_features = []
-
-    def get_columns(self):
-        """Get the list of columns in the DataFrame."""
-        return self.columns
     
-    def display_columns(self):
+    def mostrar_columnas(self):
         """Display the columns in the DataFrame."""
         for i, col in enumerate(self.columns, start = 0):
             print(f"\t [{i}]: {col}")
 
-    def select_columns(self, features: list[str], target: str):
+    def seleccionar_columnas(self, features: list[str], target: str):
         features = [int(i.strip()) for i in features.split(",") if i.strip() != ""]
         target = int(target.strip())
         if not features:
@@ -55,7 +51,7 @@ class DataManager:
 
         return X, y
     
-    def manage_missing_values(self, columns, method: int):
+    def manejar_valores_faltantes(self, columns, method: int):
         """
         Manage missing values in specific columns of the DataFrame.
 
@@ -95,18 +91,13 @@ class DataManager:
             value = input("Ingrese el valor con el que desea llenar los NaN: ")
             for col in columns:
                 self.data[col] = self.data[col].fillna(value)
-
-        elif method == 6:
-            print("\n🔁 Reiniciando menú de manejo de valores faltantes...")
-            return None
-
         else:
             print("\n⚠️ Error: Opción no válida.")
             return None
         
         return self.data
     
-    def has_missing_values(self, column: str) -> bool:
+    def tiene_valores_faltantes(self, column: str) -> bool:
         """Check if a column has missing values."""
         if self.data[column].isnull().sum() > 0:
             self.missing_values_columns.append(column)
@@ -115,67 +106,62 @@ class DataManager:
             return False
     
 
-    def is_categorical(self, column: str, og_df = False) -> bool:
+    def es_categorica(self, column: str, og_df = False) -> bool:
         """Check if a column is categorical."""
-        if not og_df:
-            if (pd.api.types.is_categorical_dtype(self.data[column]) 
-                    or pd.api.types.is_object_dtype(self.data[column]) and self.data[column].nunique() < 7
-                    or pd.api.types.is_numeric_dtype(self.data[column]) and self.data[column].nunique() < 7
-        ):      
-                self.categoric_columns.append(column)
-                return True
+        df = self.data if not og_df else self.original_data
 
-            else:
-                return False
+        if (pd.api.types.is_categorical_dtype(df[column]) 
+                or pd.api.types.is_object_dtype(df[column]) and df[column].nunique() < 7
+                or pd.api.types.is_numeric_dtype(df[column]) and df[column].nunique() < 7
+    ):      
+            self.categoric_columns.append(column)
+            return True
         else:
-            if (pd.api.types.is_categorical_dtype(self.original_data[column]) 
-                    or pd.api.types.is_object_dtype(self.original_data[column]) and self.original_data[column].nunique() < 0.05 * len(self.original_data[column]) 
-                    or pd.api.types.is_numeric_dtype(self.original_data[column]) and self.original_data[column].nunique() < 0.05 * len(self.original_data[column])
-        ):      
-                self.original_categoric_columns.append(column)
-                return True
-
-            else:
-                return False
-
+            return False
         
-    def to_categorical(self, columns: list[str], opcion: int):
+    def a_categorica(self, columns: list[str], opcion: int):
         """Convert specified columns to categorical."""
         if opcion == 1:
-            self.data = self.to_one_hot(columns)
+            self.data = self.a_one_hot(columns)
             print("Transformación completada con One-Hot Encoding.")
         elif opcion == 2:
-            self.data = self.to_label(columns)
+            self.data = self.a_label(columns)
             print("Transformación completada con Label Encoding.")
-        elif opcion == 3:
-            print("\n🔁 Reiniciando menú de manejo de valores faltantes...")
-            return None
         else:
             print("\nOpción no válida.")
             return None
         return self.data
         
-    def is_normalizable(self, column: str, og_df = False) -> bool:
+    def es_normalizable(self, column: str, og_df = False) -> bool:
         """Check if a column is normalizable."""
-        if not og_df:
-            if (pd.api.types.is_numeric_dtype(self.data[column])) and (self.data[column].nunique() > 0.05 * len(self.data[column])
-                    and self.data[column].nunique() < 0.95 * len(self.data[column])):
-                self.normalizable_columns.append(column)
-                return True
+        df = self.data if not og_df else self.original_data
 
-            else:
-                return False
+        if (pd.api.types.is_numeric_dtype(df[column])) and (df[column].nunique() > 0.05 * len(df[column])
+                and df[column].nunique() < 0.95 * len(df[column])):
+            self.normalizable_columns.append(column)
+            return True
         else:
-            if (pd.api.types.is_numeric_dtype(self.original_data[column])) and (self.original_data[column].nunique() > 0.05 * len(self.original_data[column])
-                    and self.original_data[column].nunique() < 0.95 * len(self.original_data[column])):
-                self.original_normalizable_columns.append(column)
-                return True
+            return False
+            
+    def normalizar(self, columns: list[str], method: int):
+        """Normalize specified columns using the selected method."""
+        if method == 1:
+            df_normalizado = self.normalizar_min_max(columns)
+            print("Normalización Min-Max completada.")
+        elif method == 2:
+            df_normalizado = self.normalizar_z_score(columns)
+            print("Normalización Z-score completada.")
+        else:
+            print("\nOpción no válida.")
+            return None
+        self.data = df_normalizado
+        return self.data
+    
 
-            else:
-                return False
+            
         
-    def has_outliers(self, column: str) -> bool:
-        if self.is_normalizable(column):
+    def tiene_outliers(self, column: str) -> bool:
+        if self.es_normalizable(column):
             """Check if a column has outliers using the IQR method."""
             Q1 = self.data[column].quantile(0.25)
             Q3 = self.data[column].quantile(0.75)
@@ -190,29 +176,44 @@ class DataManager:
         else:
             return False
 
-  
+    def manejar_atipicos(self, columns: list[str], method: int):
+        
+        if method == 1:
+            df_sin_atipicos = self.eliminar_atipicos(columns)
+            print("Eliminación de outliers completada.")
+        elif method == 2:
+            df_sin_atipicos = self.reemplazar_atipicos_mediana(columns)
+            print("Reemplazo de outliers con la mediana completado.")      
+
+        elif method == 3:
+            print("Manteniendo valores atípicos sin cambios.")
+            df_sin_atipicos = self.data 
+
+        else:
+            print("\nOpción no válida.")
+            return None
+        
+        self.data = df_sin_atipicos
+        return self.data
+            
+
+        
     
-    def remove_outliers(self, columns: list[str]):
+    def eliminar_atipicos(self, columns: list[str]):
         """Elimina las filas que contienen outliers en la columna especificada usando el método IQR."""
-        print(self.data)
         for column in columns:
-            if column not in self.normalizable_columns:
-                continue
-            else:
 
-                Q1 = self.data[column].quantile(0.25)
-                Q3 = self.data[column].quantile(0.75)
-                IQR = Q3 - Q1
-
-                lower_bound = Q1 - 1.5 * IQR
-                upper_bound = Q3 + 1.5 * IQR
-
-                # Conserva solo los valores dentro de los límites
-                self.data = self.data[self.data[column] >= lower_bound]
-                self.data = self.data[self.data[column] <= upper_bound]
+            Q1 = self.data[column].quantile(0.25)
+            Q3 = self.data[column].quantile(0.75)
+            IQR = Q3 - Q1
+            lower_bound = Q1 - 1.5 * IQR
+            upper_bound = Q3 + 1.5 * IQR
+            # Conserva solo los valores dentro de los límites
+            self.data = self.data[self.data[column] >= lower_bound]
+            self.data = self.data[self.data[column] <= upper_bound]
         return self.data
     
-    def replace_outliers_with_median(self, columns: list[str]):
+    def reemplazar_atipicos_mediana(self, columns: list[str]):
         """Reemplaza los outliers en la columna especificada con la mediana de esa columna."""
         for column in columns:
             print(column)
@@ -239,7 +240,7 @@ class DataManager:
     
 
 
-    def to_one_hot(self, columns: list[str]):
+    def a_one_hot(self, columns: list[str]):
         """One-hot encode columns and update only selected features."""
         original_features = self.features.copy()
         for col in columns:
@@ -265,32 +266,21 @@ class DataManager:
         return self.data
 
     
-    def to_label(self , columns: list[str]):
+    def a_label(self , columns: list[str]):
         """Convert specified columns to label encoding."""
         for col in columns:
             self.data[col] = self.data[col].astype('category').cat.codes
         self.new_features = self.features
         return self.data
     
-    def min_max_scaler(self, columns: list[str]):
+    def normalizar_min_max(self, columns: list[str]):
         """Apply Min-Max scaling to specified columns."""
         scaler = MinMaxScaler()
         self.data[columns] = scaler.fit_transform(self.data[columns])
         return self.data
 
-    def z_score_scaler(self, columns: list[str]):
+    def normalizar_z_score(self, columns: list[str]):
         """Apply Z-Score scaling to specified columns."""
         scaler = StandardScaler()
         self.data[columns] = scaler.fit_transform(self.data[columns])
         return self.data
-        
-
-    def get_data(self, key):
-        if key not in self.data:
-            raise KeyError(f"Key {key} not found.")
-        return self.data[key]
-
-    def remove_data(self, key):
-        if key not in self.data:
-            raise KeyError(f"Key {key} not found.")
-        del self.data[key]
