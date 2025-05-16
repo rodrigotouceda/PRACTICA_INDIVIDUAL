@@ -135,10 +135,11 @@ class DataManager:
     def es_normalizable(self, column: str, og_df = False) -> bool:
         """Check if a column is normalizable."""
         df = self.data if not og_df else self.original_data
+        norm_cols = self.normalizable_columns if not og_df else self.original_normalizable_columns
 
         if (pd.api.types.is_numeric_dtype(df[column])) and (df[column].nunique() > 0.05 * len(df[column])
                 and df[column].nunique() < 0.95 * len(df[column])):
-            self.normalizable_columns.append(column)
+            norm_cols.append(column)
             return True
         else:
             return False
