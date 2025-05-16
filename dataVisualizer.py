@@ -6,8 +6,20 @@ import itertools
 import math
 
 class VisualizerCLI:
+    """
+    Clase para generar visualizaciones y resúmenes estadísticos de los datos originales y procesados.
+    """
     def __init__(self, df_original: pd.DataFrame, df_procesado: pd.DataFrame, original_features: list[str], processed_features: list[str], data_manager: DataManager):
-        
+        """
+        Inicializa el visualizador con los datasets y características.
+
+        Args:
+            df_original (pd.DataFrame): Dataset original.
+            df_procesado (pd.DataFrame): Dataset después del preprocesamiento.
+            original_features (list): Lista de características originales.
+            processed_features (list): Lista de características después del procesamiento.
+            data_manager (DataManager): Instancia de DataManager para acceder a información de columnas.
+        """
         self.df_original = df_original
         self.df_procesado = df_procesado
         self.visualizacion_completada = False
@@ -19,6 +31,7 @@ class VisualizerCLI:
         self.og_numerical_features = []
         self.one_hot_features = []
         self.new_numerical_features = []
+
 
         for feature in self.original_features:
             
@@ -37,6 +50,20 @@ class VisualizerCLI:
         
 
     def mostrar_menu(self):
+        """
+        Muestra un menú interactivo en la línea de comandos para seleccionar
+        diferentes tipos de visualizaciones de datos.
+
+        Opciones del menú:
+            [1] Mostrar un resumen estadístico de las variables seleccionadas.
+            [2] Generar histogramas de las variables numéricas.
+            [3] Mostrar gráficos de dispersión antes y después de la normalización.
+            [4] Generar un heatmap de correlación entre variables numéricas.
+            [5] Volver al menú principal.
+
+        El atributo `self.visualizacion_completada` se actualiza a True si el usuario genera
+        alguna visualización antes de volver al menú principal.
+        """
         while True:
             print("\n=============================")
             print("Visualización de Datos")
@@ -80,7 +107,9 @@ class VisualizerCLI:
                 continue
 
     def mostrar_resumen_estadistico(self):
-            
+        """
+        Muestra estadísticas descriptivas de los datasets original y procesado.
+        """    
         print("\nResumen estadístico de las variables seleccionadas (antes del preprocesado):")
         print("\n================================================================")
         print("Resumen estadístico de variables categóricas (ANTES del preprocesado):")
@@ -198,6 +227,9 @@ class VisualizerCLI:
 
 
     def mostrar_histogramas_variables_numericas(self):
+        """
+        Genera histogramas para cada variable numérica en los datasets original y procesado.
+        """
         print("\n=======================================")
         print("Histograma de variables numéricas (ANTES del preprocesado):")
         print("=======================================")
@@ -225,7 +257,9 @@ class VisualizerCLI:
             plt.show()
 
     def graficos_dispersion(self):
-
+        """
+        Genera gráficos de dispersión para las combinaciones de variables numéricas.
+        """
         print("\n=======================================")
         print("Gráficos de dispersión para todas las combinaciones 2 a 2")
         print("=======================================")
@@ -267,7 +301,9 @@ class VisualizerCLI:
         return col.split('_')[0]
 
     def generar_heatmap(self, min_freq=20):
-
+        """
+        Genera mapas de calor de correlación y frecuencias cruzadas.
+        """
         print("\n=======================================")
         print("Heatmaps de correlación y frecuencia")
         print("=======================================")
