@@ -3,7 +3,8 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 class DataManager:
     def __init__(self, dataframe: pd.DataFrame):
-        """Initialize DataManager with a pandas DataFrame."""
+        """Inicializa el DataManager con un DataFrame de pandas, guardando una copia original y 
+        creando variables auxiliares para el procesamiento."""
         self.original_data = dataframe
         self.data = dataframe.copy()
         self.columns = dataframe.columns.tolist()
@@ -19,11 +20,23 @@ class DataManager:
         self.one_hot_features = []
     
     def mostrar_columnas(self):
-        """Display the columns in the DataFrame."""
+        """Muestra los índices y nombres de las columnas del DataFrame."""
         for i, col in enumerate(self.columns, start = 0):
             print(f"\t [{i}]: {col}")
 
     def seleccionar_columnas(self, features: list[str], target: str):
+        """
+        Permite seleccionar columnas como características (features) y como variable objetivo (target) 
+        mediante índices.
+
+        Args:
+            features (list[str]): Lista de índices como strings separados por coma.
+            target (str): Índice de la columna objetivo como string.
+
+        Returns:
+            tuple: Tupla con lista de nombres de columnas features y nombre de columna target, 
+            o (None, None) si hay error.
+        """
         features = [int(i.strip()) for i in features.split(",") if i.strip() != ""]
         target = int(target.strip())
         if not features:
@@ -42,7 +55,7 @@ class DataManager:
             print("\n⚠️ Error: Has ingresado un número de columna que no existe.")
             return None, None
 
-        # Convertir a nombres de columnas
+        #Convertir a nombres de columnas
         X = [self.columns[i] for i in features]
         y = self.columns[target]
 
@@ -53,20 +66,20 @@ class DataManager:
     
     def manejar_valores_faltantes(self, columns, method: int):
         """
-        Manage missing values in specific columns of the DataFrame.
+        Maneja valores faltantes en columnas específicas del DataFrame.
 
         Args:
-            columns (list): Column names to apply the method on.
+            columns (list): Nombres de columnas a procesar.
             method (int): 
-                1 - Drop rows with NaN
-                2 - Fill with mean
-                3 - Fill with median
-                4 - Fill with mode
-                5 - Fill with a specific value
-                6 - Restart menu
+                1 - Eliminar filas con NaN
+                2 - Rellenar con la media
+                3 - Rellenar con la mediana
+                4 - Rellenar con la moda
+                5 - Rellenar con un valor específico
+                6 - Reiniciar menú
 
         Returns:
-            None or DataFrame: Returns the updated DataFrame or None if cancelled.
+            DataFrame o None: DataFrame actualizado o None si hay error.
         """
         print(self.data.dtypes[columns])
         if method == 1:
@@ -98,7 +111,15 @@ class DataManager:
         return self.data
     
     def tiene_valores_faltantes(self, column: str) -> bool:
-        """Check if a column has missing values."""
+        """
+        Verifica si una columna tiene valores faltantes (NaN).
+
+        Args:
+            column (str): Nombre de la columna.
+
+        Returns:
+            bool: True si hay valores faltantes, False en caso contrario.
+        """
         if self.data[column].isnull().sum() > 0:
             self.missing_values_columns.append(column)
             return True
@@ -107,7 +128,16 @@ class DataManager:
     
 
     def es_categorica(self, column: str, og_df = False) -> bool:
-        """Check if a column is categorical."""
+        """
+        Determina si una columna puede considerarse categórica.
+
+        Args:
+            column (str): Nombre de la columna.
+            og_df (bool): Si se debe evaluar sobre el DataFrame original.
+
+        Returns:
+            bool: True si es categórica, False si no.
+        """
         df = self.data if not og_df else self.original_data
 
         if (pd.api.types.is_categorical_dtype(df[column]) 
@@ -120,7 +150,18 @@ class DataManager:
             return False
         
     def a_categorica(self, columns: list[str], opcion: int):
-        """Convert specified columns to categorical."""
+        """
+        Convierte columnas categóricas a formato numérico.
+
+        Args:
+            columns (list[str]): Lista de columnas a transformar.
+            opcion (int): 
+                1 - One-Hot Encoding
+                2 - Label Encoding
+
+        Returns:
+            DataFrame: DataFrame transformado.
+        """
         if opcion == 1:
             self.data = self.a_one_hot(columns)
             print("Transformación completada con One-Hot Encoding.")
@@ -133,7 +174,16 @@ class DataManager:
         return self.data
         
     def es_normalizable(self, column: str, og_df = False) -> bool:
-        """Check if a column is normalizable."""
+        """
+        Verifica si una columna es adecuada para normalización.
+
+        Args:
+            column (str): Nombre de la columna.
+            og_df (bool): Si se debe evaluar sobre el DataFrame original.
+
+        Returns:
+            bool: True si se puede normalizar, False en caso contrario.
+        """
         df = self.data if not og_df else self.original_data
         norm_cols = self.normalizable_columns if not og_df else self.original_normalizable_columns
 
@@ -145,7 +195,18 @@ class DataManager:
             return False
             
     def normalizar(self, columns: list[str], method: int):
-        """Normalize specified columns using the selected method."""
+        """
+        Normaliza las columnas indicadas con el método elegido.
+
+        Args:
+            columns (list[str]): Lista de columnas numéricas.
+            method (int): 
+                1 - Min-Max Scaling
+                2 - Z-Score Scaling
+
+        Returns:
+            DataFrame: DataFrame normalizado.
+        """
         if method == 1:
             df_normalizado = self.normalizar_min_max(columns)
             print("Normalización Min-Max completada.")
@@ -159,9 +220,16 @@ class DataManager:
         return self.data
     
 
-            
-        
     def tiene_outliers(self, column: str) -> bool:
+        """
+        Verifica si una columna contiene outliers utilizando el método IQR.
+
+        Args:
+            column (str): Nombre de la columna.
+
+        Returns:
+            bool: True si hay outliers, False si no.
+        """
         if self.es_normalizable(column):
             """Check if a column has outliers using the IQR method."""
             Q1 = self.data[column].quantile(0.25)
@@ -178,7 +246,19 @@ class DataManager:
             return False
 
     def manejar_atipicos(self, columns: list[str], method: int):
-        
+        """
+        Maneja valores atípicos (outliers) en columnas especificadas.
+
+        Args:
+            columns (list[str]): Lista de columnas a evaluar.
+            method (int): 
+                1 - Eliminar filas con outliers
+                2 - Reemplazar con la mediana
+                3 - No hacer nada
+
+        Returns:
+            DataFrame: DataFrame actualizado.
+        """
         if method == 1:
             df_sin_atipicos = self.eliminar_atipicos(columns)
             print("Eliminación de outliers completada.")
@@ -196,12 +276,18 @@ class DataManager:
         
         self.data = df_sin_atipicos
         return self.data
-            
-
-        
+ 
     
     def eliminar_atipicos(self, columns: list[str]):
-        """Elimina las filas que contienen outliers en la columna especificada usando el método IQR."""
+        """
+        Elimina filas que contienen outliers en las columnas indicadas usando el método IQR.
+
+        Args:
+            columns (list[str]): Columnas a evaluar.
+
+        Returns:
+            DataFrame: DataFrame sin outliers.
+        """
         for column in columns:
 
             Q1 = self.data[column].quantile(0.25)
@@ -209,13 +295,21 @@ class DataManager:
             IQR = Q3 - Q1
             lower_bound = Q1 - 1.5 * IQR
             upper_bound = Q3 + 1.5 * IQR
-            # Conserva solo los valores dentro de los límites
+            # Conservar solo los valores dentro de los límites
             self.data = self.data[self.data[column] >= lower_bound]
             self.data = self.data[self.data[column] <= upper_bound]
         return self.data
     
     def reemplazar_atipicos_mediana(self, columns: list[str]):
-        """Reemplaza los outliers en la columna especificada con la mediana de esa columna."""
+        """
+        Reemplaza valores atípicos en columnas especificadas con la mediana de esa columna.
+
+        Args:
+            columns (list[str]): Columnas a procesar.
+
+        Returns:
+            DataFrame: DataFrame con outliers reemplazados.
+        """        
         for column in columns:
             print(column)
             if column not in self.outlier_columns:
@@ -229,12 +323,9 @@ class DataManager:
                 lower_bound = Q1 - 1.5 * IQR
                 upper_bound = Q3 + 1.5 * IQR
 
-                # Calcula la mediana
                 median_value = self.data[column].median()
 
                 outliers_mask = (self.data[column] < lower_bound) | (self.data[column] > upper_bound)
-
-                # Aquí está el punto crítico: asegúrate de usar .loc para modificar
                 self.data.loc[outliers_mask, column] = median_value
 
         return self.data
@@ -242,7 +333,15 @@ class DataManager:
 
 
     def a_one_hot(self, columns: list[str]):
-        """One-hot encode columns and update only selected features."""
+        """
+        Aplica One-Hot Encoding a columnas categóricas.
+
+        Args:
+            columns (list[str]): Lista de columnas a transformar.
+
+        Returns:
+            DataFrame: DataFrame actualizado con nuevas columnas codificadas.
+        """
         original_features = self.features.copy()
         for col in columns:
             print(f"Valores únicos en {col}: {self.data[col].unique()}")
@@ -253,7 +352,6 @@ class DataManager:
             one_hot_cols = [c for c in self.data.columns if c.startswith(col + '_')]
             print(f"Columnas one-hot generadas para {col}: {one_hot_cols}")
 
-        # Actualizar solo las columnas derivadas de las seleccionadas
         updated_features = []
         for col in original_features:
             if col in columns:
@@ -268,20 +366,44 @@ class DataManager:
 
     
     def a_label(self , columns: list[str]):
-        """Convert specified columns to label encoding."""
+        """
+        Aplica Label Encoding a columnas categóricas.
+
+        Args:
+            columns (list[str]): Lista de columnas a transformar.
+
+        Returns:
+            DataFrame: DataFrame con columnas codificadas.
+        """
         for col in columns:
             self.data[col] = self.data[col].astype('category').cat.codes
         self.new_features = self.features
         return self.data
     
     def normalizar_min_max(self, columns: list[str]):
-        """Apply Min-Max scaling to specified columns."""
+        """
+        Aplica normalización Min-Max a las columnas especificadas.
+
+        Args:
+            columns (list[str]): Lista de columnas a normalizar.
+
+        Returns:
+            DataFrame: DataFrame con columnas normalizadas.
+        """
         scaler = MinMaxScaler()
         self.data[columns] = scaler.fit_transform(self.data[columns])
         return self.data
 
     def normalizar_z_score(self, columns: list[str]):
-        """Apply Z-Score scaling to specified columns."""
+        """
+        Aplica normalización Z-Score a las columnas especificadas.
+
+        Args:
+            columns (list[str]): Lista de columnas a normalizar.
+
+        Returns:
+            DataFrame: DataFrame con columnas normalizadas.
+        """
         scaler = StandardScaler()
         self.data[columns] = scaler.fit_transform(self.data[columns])
         return self.data
